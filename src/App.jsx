@@ -2547,6 +2547,10 @@ function App() {
           font-weight: 550;
         }
 
+        .score-cell {
+          text-align: center;
+        }
+
         .score-cell strong {
           font-size: 18px;
         }
@@ -2555,6 +2559,18 @@ function App() {
           color: var(--muted);
 
           font-size: 11px;
+        }
+
+        .table-header span:nth-child(3),
+        .table-header span:nth-child(4),
+        .table-header span:nth-child(5) {
+          text-align: center;
+        }
+
+        .user-row > div:nth-child(4),
+        .user-row > div:nth-child(5) {
+          display: flex;
+          justify-content: center;
         }
 
         .priority,
