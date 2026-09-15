@@ -1058,27 +1058,35 @@ function Dashboard({
         </p>
       </section>
 
-      <div className="roi-strip">
-        <div className="roi-item">
-          <strong><CountUp value={completed} /></strong>
-          <span>proposta{completed !== 1 ? "s" : ""} recuperada{completed !== 1 ? "s" : ""}</span>
-        </div>
-        <div className="roi-divider" />
-        <div className="roi-item roi-item-highlight">
-          <strong>R$ <CountUp value={completed * 480} />k</strong>
-          <span>valor estimado resgatado</span>
-        </div>
-        <div className="roi-divider" />
-        <div className="roi-item">
-          <strong><CountUp value={successRate} />%</strong>
-          <span>taxa de reengajamento</span>
-        </div>
-        <div className="roi-divider" />
-        <div className="roi-item">
-          <strong>R$ 0</strong>
-          <span>custo de infraestrutura</span>
-        </div>
-      </div>
+      {(() => {
+        const abandoned = users.filter(u => u.abandoned).length;
+        const valorEmRisco = abandoned * 480;
+        const ativos = activeAutomations.length;
+        const recuperados = completed > 0 ? completed : returned;
+        return (
+          <div className="roi-strip">
+            <div className="roi-item">
+              <strong><CountUp value={abandoned} /></strong>
+              <span>proposta{abandoned !== 1 ? "s" : ""} em risco</span>
+            </div>
+            <div className="roi-divider" />
+            <div className="roi-item roi-item-highlight">
+              <strong>R$ <CountUp value={valorEmRisco} />k</strong>
+              <span>valor monitorado</span>
+            </div>
+            <div className="roi-divider" />
+            <div className="roi-item">
+              <strong><CountUp value={ativos} /></strong>
+              <span>reengajamento{ativos !== 1 ? "s" : ""} ativo{ativos !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="roi-divider" />
+            <div className="roi-item">
+              <strong>R$ 0</strong>
+              <span>custo de infraestrutura</span>
+            </div>
+          </div>
+        );
+      })()}
 
       <section className="stats-grid">
         <StatCard
