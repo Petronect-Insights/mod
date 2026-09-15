@@ -1212,48 +1212,37 @@ function UserDetails({
         ← Voltar
       </button>
 
-      <div className="profile-header">
+      <div className={`profile-header profile-header-${user.priority}`}>
         <div className="profile-main">
-          <div className="company-avatar profile">
+          <div className={`company-avatar profile avatar-priority-${user.priority}`}>
             {user.name[0].toUpperCase()}
           </div>
 
           <div>
-            <span className="eyebrow">
-              ANÁLISE DO USUÁRIO
-            </span>
-
+            <span className="eyebrow">ANÁLISE DO USUÁRIO</span>
             <h1>{user.name}</h1>
-
             <div className="profile-meta">
               <span>{user.type}</span>
               <span>•</span>
-              <span>
-                Último acesso: {user.lastAccess}
-              </span>
+              <span>Último acesso: {user.lastAccess}</span>
+            </div>
+            <div className="profile-tags">
+              <span className="profile-tag">{user.behavior}</span>
+              <span className="profile-tag">Score {user.score}/100</span>
             </div>
           </div>
         </div>
 
         <div className="profile-priority">
           <span>Prioridade atual</span>
-
-          <PriorityBadge
-            priority={user.priority}
-          />
+          <PriorityBadge priority={user.priority} />
+          <div className="profile-score-ring">
+            <ScoreRing score={user.score} />
+          </div>
         </div>
       </div>
 
       <div className="detail-stats">
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <ScoreRing score={user.score} />
-          <div>
-            <span>Score comportamental</span>
-            <strong style={{ fontSize: 31 }}>{user.score}</strong>
-            <small>/100</small>
-          </div>
-        </div>
-
         <div>
           <span>Interações</span>
           <strong>{user.interactions}</strong>
@@ -1297,19 +1286,15 @@ function UserDetails({
                   <span className={event.type === "Abandono" ? "marker-abandon" : ""} />
                 </div>
 
-                <div className="timeline-time">
-                  {event.time}
-                </div>
-
                 <div className="timeline-content">
-                  <strong>{event.type}</strong>
+                  <div className="timeline-event-row">
+                    <span className="timeline-time">{event.time}</span>
+                    <strong>{event.type}</strong>
+                    {event.phase === "after" && (
+                      <small className="after-tag">reengajamento</small>
+                    )}
+                  </div>
                   <span>{event.detail}</span>
-
-                  {event.phase === "after" && (
-                    <small>
-                      Após reengajamento
-                    </small>
-                  )}
                 </div>
               </div>
             ))}
@@ -3027,6 +3012,57 @@ function App() {
           gap: 30px;
         }
 
+        .profile-header-Alta {
+          background:
+            radial-gradient(circle at 92% 50%, rgba(216,91,91,.10), transparent 50%),
+            var(--surface);
+          border-left: 4px solid #d85b5b;
+        }
+
+        .profile-header-Média {
+          background:
+            radial-gradient(circle at 92% 50%, rgba(215,166,51,.10), transparent 50%),
+            var(--surface);
+          border-left: 4px solid #d7a633;
+        }
+
+        .profile-header-Baixa {
+          background:
+            radial-gradient(circle at 92% 50%, rgba(41,72,143,.07), transparent 50%),
+            var(--surface);
+          border-left: 4px solid var(--blue-light);
+        }
+
+        .avatar-priority-Alta {
+          background: linear-gradient(145deg, #c43c3c, #8a1f1f);
+        }
+
+        .avatar-priority-Média {
+          background: linear-gradient(145deg, #b08000, #7a5800);
+        }
+
+        .profile-tags {
+          display: flex;
+          gap: 7px;
+          margin-top: 10px;
+          flex-wrap: wrap;
+        }
+
+        .profile-tag {
+          display: inline-flex;
+          padding: 4px 11px;
+          border-radius: 999px;
+          background: var(--surface-soft);
+          border: 1px solid var(--border);
+          color: var(--text-secondary);
+          font-size: 12px;
+          font-weight: 600;
+        }
+
+        .profile-score-ring {
+          margin-top: 12px;
+        }
+
         .profile-main {
           display: flex;
           align-items: center;
@@ -3074,7 +3110,6 @@ function App() {
           display: grid;
 
           grid-template-columns:
-            1.4fr
             repeat(4,1fr);
 
           gap: 12px;
@@ -3161,16 +3196,33 @@ function App() {
         }
 
         .timeline-item {
-          min-height: 67px;
+          min-height: 60px;
 
           display: grid;
 
           grid-template-columns:
             23px
-            58px
             1fr;
 
           gap: 13px;
+        }
+
+        .timeline-event-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 3px;
+        }
+
+        .after-tag {
+          display: inline-flex !important;
+          padding: 2px 8px;
+          border-radius: 999px;
+          background: rgba(41,72,143,.12);
+          color: var(--blue);
+          font-size: 10px !important;
+          font-weight: 750;
+          margin-top: 0 !important;
         }
 
         .timeline-marker {
@@ -3222,8 +3274,11 @@ function App() {
 
         .timeline-time {
           color: var(--muted);
-
-          font-size: 12px;
+          font-size: 11px;
+          font-weight: 600;
+          font-variant-numeric: tabular-nums;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
 
         .timeline-content strong,
