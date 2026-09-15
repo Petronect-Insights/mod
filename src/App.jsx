@@ -3002,8 +3002,21 @@ function App() {
         .company-info {
           display: flex;
           align-items: center;
-
           gap: 13px;
+          min-width: 0;
+        }
+
+        .company-info > div {
+          min-width: 0;
+          overflow: hidden;
+        }
+
+        .company-info strong,
+        .company-info span {
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .company-avatar {
@@ -3044,11 +3057,6 @@ function App() {
           font-size: 25px;
         }
 
-        .company-info strong,
-        .company-info span {
-          display: block;
-        }
-
         .company-info span {
           margin-top: 4px;
 
@@ -3064,6 +3072,10 @@ function App() {
           font-weight: 550;
 
           text-align: left;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .score-cell {
