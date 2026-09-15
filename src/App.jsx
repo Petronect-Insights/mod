@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 const baseUsers = [
   {
     id: "empresa-a",
+    code: "USR-45821",
     name: "Metalúrgica Nordeste Ltda",
     type: "Fornecedor",
     lastAccess: "Hoje, 10:15",
@@ -30,6 +31,7 @@ const baseUsers = [
 
   {
     id: "empresa-b",
+    code: "USR-77103",
     name: "Construtora Vega S.A.",
     type: "Fornecedor",
     lastAccess: "Hoje, 09:40",
@@ -44,6 +46,7 @@ const baseUsers = [
 
   {
     id: "empresa-c",
+    code: "USR-99217",
     name: "Distribuidora Atlântico ME",
     type: "Fornecedor",
     lastAccess: "Há 12 dias",
@@ -56,6 +59,7 @@ const baseUsers = [
 
   {
     id: "empresa-d",
+    code: "USR-33411",
     name: "Tech Suprimentos Bahia",
     type: "Fornecedor",
     lastAccess: "Hoje, 09:35",
@@ -78,6 +82,7 @@ const baseUsers = [
 
   {
     id: "empresa-e",
+    code: "USR-56789",
     name: "Porto Seguro Logística",
     type: "Cliente",
     lastAccess: "Ontem, 16:20",
@@ -92,6 +97,7 @@ const baseUsers = [
 
   {
     id: "empresa-f",
+    code: "USR-12056",
     name: "Serviços Integrados JK",
     type: "Fornecedor",
     lastAccess: "Hoje, 11:30",
@@ -1284,7 +1290,7 @@ function Dashboard({
 
                 <div>
                   <strong>{user.name}</strong>
-                  <span>{user.type}</span>
+                  <span>{user.code} · {user.type}</span>
                 </div>
               </div>
 
@@ -1415,7 +1421,7 @@ function UsersPage({
             </div>
 
             <h3>{user.name}</h3>
-            <span className="user-type-label">{user.type}</span>
+            <span className="user-type-label"><span className="user-code">{user.code}</span> · {user.type}</span>
 
             <div className="user-card-behavior">{user.behavior}</div>
 
@@ -1557,7 +1563,7 @@ function AutomationsPage({
               <div className="company-avatar">{user.name[0].toUpperCase()}</div>
               <div>
                 <strong>{user.name}</strong>
-                <span>{user.behavior}</span>
+                <span>{user.code} · {user.behavior}</span>
               </div>
             </div>
             <div className="automation-list-info">
@@ -1684,6 +1690,8 @@ function UserDetails({
             <span className="eyebrow">ANÁLISE DO USUÁRIO</span>
             <h1>{user.name}</h1>
             <div className="profile-meta">
+              <span className="profile-code">{user.code}</span>
+              <span>•</span>
               <span>{user.type}</span>
               <span>•</span>
               <span>Último acesso: {user.lastAccess}</span>
@@ -3384,6 +3392,14 @@ function App() {
           margin: 0;
 
           font-size: 22px;
+        }
+
+        .user-code, .profile-code {
+          font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+          font-size: 11px;
+          font-weight: 700;
+          color: var(--blue);
+          letter-spacing: .03em;
         }
 
         .user-type-label {
