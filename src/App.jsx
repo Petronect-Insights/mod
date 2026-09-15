@@ -15,11 +15,11 @@ const baseUsers = [
     prazoUrgente: true,
     events: [
       { time: "10:02", type: "Login", detail: "Acesso ao Portal Petronect", phase: "before" },
-      { time: "10:05", type: "Busca", detail: "Consultou editais de licitação abertos", phase: "before" },
-      { time: "10:07", type: "Visualização", detail: "Visualizou edital nº 4600123456", phase: "before" },
-      { time: "10:10", type: "Download", detail: "Baixou caderno de especificações técnicas", phase: "before" },
-      { time: "10:12", type: "Início de jornada", detail: "Iniciou envio de proposta comercial", phase: "before" },
-      { time: "10:15", type: "Abandono", detail: "Abandonou envio antes do prazo de entrega", phase: "before" },
+      { time: "10:05", type: "Busca", detail: "Módulo Oportunidades — consultou editais de licitação abertos", phase: "before" },
+      { time: "10:07", type: "Visualização", detail: "Módulo Oportunidades — visualizou edital nº 4600123456", phase: "before" },
+      { time: "10:10", type: "Download", detail: "Módulo Propostas — baixou caderno de especificações técnicas", phase: "before" },
+      { time: "10:12", type: "Início de jornada", detail: "Módulo Propostas — iniciou envio de proposta comercial", phase: "before" },
+      { time: "10:15", type: "Abandono", detail: "Módulo Propostas — abandonou envio antes do prazo de entrega", phase: "before" },
     ],
     followUpTemplate: [
       { time: "11:02", type: "Login", detail: "Retornou ao Portal após contato da equipe Petronect", phase: "after" },
@@ -64,10 +64,10 @@ const baseUsers = [
     prazoUrgente: false,
     events: [
       { time: "08:30", type: "Login", detail: "Acesso ao Portal Petronect", phase: "before" },
-      { time: "08:35", type: "Busca", detail: "Consultou editais da categoria Tecnologia", phase: "before" },
-      { time: "08:40", type: "Visualização", detail: "Visualizou edital nº 4600201345", phase: "before" },
-      { time: "08:48", type: "Início de jornada", detail: "Iniciou envio de proposta técnica", phase: "before" },
-      { time: "08:55", type: "Abandono", detail: "Abandonou envio — erro no preenchimento de campos obrigatórios", phase: "before" },
+      { time: "08:35", type: "Busca", detail: "Módulo Oportunidades — consultou editais da categoria Tecnologia", phase: "before" },
+      { time: "08:40", type: "Visualização", detail: "Módulo Oportunidades — visualizou edital nº 4600201345", phase: "before" },
+      { time: "08:48", type: "Início de jornada", detail: "Módulo Propostas — iniciou envio de proposta técnica", phase: "before" },
+      { time: "08:55", type: "Abandono", detail: "Módulo Propostas — erro no preenchimento de campos obrigatórios", phase: "before" },
     ],
     followUpTemplate: [
       { time: "09:22", type: "Login", detail: "Retornou ao Portal após o reengajamento", phase: "after" },
@@ -317,10 +317,11 @@ function applyReengagementEngine(user) {
   }
 
   const steps = [
-    { delay: "T+0h",  label: "Notificação no portal Petronect",    done: true },
-    { delay: "T+4h",  label: "E-mail com link direto de retomada", done: true },
-    { delay: "T+24h", label: user.score >= 70 ? "WhatsApp Business com urgência" : "Segundo e-mail de acompanhamento", done: user.score >= 70 },
-    { delay: "T+48h", label: "Ligação — gestor comercial Petronect", done: !!(user.score >= 85 || user.prazoUrgente) },
+    { delay: "T+0h",  label: "Notificação no Portal Petronect",                        done: true },
+    { delay: "T+4h",  label: "E-mail com link direto para retomar a proposta",          done: true },
+    { delay: "T+16h", label: "Mensagem via Sala de Colaboração do edital",              done: user.score >= 50 },
+    { delay: "T+24h", label: user.score >= 70 ? "WhatsApp Business com urgência" : "Segundo e-mail + guia de apoio ao usuário", done: user.score >= 70 },
+    { delay: "T+48h", label: "Ligação direta — gestor comercial Petronect",            done: !!(user.score >= 85 || user.prazoUrgente) },
   ];
 
   return {
@@ -658,9 +659,9 @@ function Dashboard({
         </h1>
 
         <p>
-          Cada oportunidade no Petronect tem requisitos, prazos e condições próprias.
-          O Insights identifica o fornecedor certo, no momento certo,
-          e aciona o canal mais eficiente.
+          Disponibilizar a plataforma não é decidir a contratação.
+          O Petronect Insights identifica o fornecedor certo, na oportunidade certa,
+          e aciona o canal mais eficiente antes que o prazo se esgote.
         </p>
       </section>
 
