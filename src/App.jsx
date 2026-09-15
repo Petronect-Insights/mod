@@ -1529,7 +1529,6 @@ function AutomationPage({
         </h1>
 
         <p>
-          Cada oportunidade tem seus requisitos e prazo próprios.
           O sistema detectou o momento crítico e está acompanhando
           a jornada em tempo real.
         </p>
@@ -3712,7 +3711,7 @@ function App() {
         }
 
         .automation-hero {
-          max-width: 820px;
+          max-width: 580px;
 
           margin: 0 auto 40px;
           padding-top: 28px;
