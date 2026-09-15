@@ -211,6 +211,15 @@ function analyzeUser(user) {
     behavior = "Baixa interação";
   }
 
+  let signal;
+  if ((user.prazoUrgente && abandoned) || score >= 85) {
+    signal = "Crítico";
+  } else if (abandoned || score >= 50) {
+    signal = "Atenção";
+  } else {
+    signal = "Monitoramento";
+  }
+
   return {
     ...user,
     interactions,
@@ -223,6 +232,7 @@ function analyzeUser(user) {
     score,
     priority,
     behavior,
+    signal,
     reasons,
   };
 }
@@ -394,6 +404,15 @@ function PriorityBadge({ priority }) {
   return (
     <span className={`priority priority-${priority}`}>
       {priority}
+    </span>
+  );
+}
+
+function SignalBadge({ signal }) {
+  const dot = signal === "Crítico" ? "🔴" : signal === "Atenção" ? "🟡" : "⚪";
+  return (
+    <span className={`signal-badge signal-${signal?.replace("ã", "a").replace("é", "e")}`}>
+      {dot} {signal}
     </span>
   );
 }
@@ -828,7 +847,7 @@ function Dashboard({
           <div className="table-header">
             <span>Usuário</span>
             <span>Comportamento</span>
-            <span>Score</span>
+            <span>Sinal</span>
             <span>Prioridade</span>
             <span>Automação</span>
           </div>
@@ -855,8 +874,7 @@ function Dashboard({
               </div>
 
               <div className="score-cell">
-                <strong>{user.score}</strong>
-                <span>/100</span>
+                <SignalBadge signal={user.signal} />
               </div>
 
               <div>
@@ -982,17 +1000,8 @@ function UsersPage({
 
             <div className="user-card-behavior">{user.behavior}</div>
 
-            <div className="user-card-score-bar">
-              <div className="user-card-score-track">
-                <div
-                  className="user-card-score-fill"
-                  style={{
-                    width: `${user.score}%`,
-                    background: user.score >= 70 ? "#d85b5b" : user.score >= 40 ? "#d7a633" : "#8d9aad",
-                  }}
-                />
-              </div>
-              <span>Score <strong>{user.score}</strong></span>
+            <div className="user-card-signal">
+              <SignalBadge signal={user.signal} />
             </div>
 
             <div className="user-card-footer">
@@ -1290,7 +1299,7 @@ function UserDetails({
             </div>
             <div className="profile-tags">
               <span className="profile-tag">{user.behavior}</span>
-              <span className="profile-tag">Score {user.score}/100</span>
+              <SignalBadge signal={user.signal} />
             </div>
           </div>
         </div>
@@ -2658,6 +2667,37 @@ function App() {
           font-weight: 800;
 
           white-space: nowrap;
+        }
+
+        /* ── Sinal de reengajamento ── */
+        .signal-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 5px 11px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 750;
+          white-space: nowrap;
+        }
+
+        .signal-Critico {
+          background: rgba(216,91,91,.12);
+          color: #b53636;
+        }
+
+        .signal-Atencao {
+          background: rgba(215,166,51,.12);
+          color: #8e6200;
+        }
+
+        .signal-Monitoramento {
+          background: rgba(141,154,173,.12);
+          color: #536174;
+        }
+
+        .user-card-signal {
+          margin: 6px 0 12px;
         }
 
         .priority-Alta {
