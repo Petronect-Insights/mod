@@ -2341,14 +2341,14 @@ function App() {
         }
 
         .chart-card {
-          padding: 28px;
+          padding: 28px 30px;
 
           border-radius: 28px;
         }
 
         .chart-heading {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           justify-content: space-between;
 
           gap: 20px;
@@ -2468,7 +2468,7 @@ function App() {
         }
 
         .main-panel {
-          padding: 34px;
+          padding: 28px 30px;
 
           border-radius: 30px;
         }
@@ -2477,7 +2477,7 @@ function App() {
           margin-bottom: 28px;
 
           display: flex;
-          align-items: flex-end;
+          align-items: flex-start;
           justify-content: space-between;
 
           gap: 30px;
