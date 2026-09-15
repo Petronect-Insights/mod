@@ -1,0 +1,3959 @@
+import { useEffect, useMemo, useState } from "react";
+
+/* =========================================================
+   DADOS SIMULADOS
+========================================================= */
+
+const baseUsers = [
+  {
+    id: "empresa-a",
+    name: "Metalúrgica Nordeste Ltda",
+    type: "Fornecedor",
+    lastAccess: "Hoje, 10:15",
+    events: [
+      { time: "10:02", type: "Login", detail: "Acesso ao Portal", phase: "before" },
+      { time: "10:05", type: "Busca", detail: "Busca por oportunidades", phase: "before" },
+      { time: "10:07", type: "Visualização", detail: "Visualizou uma oportunidade", phase: "before" },
+      { time: "10:10", type: "Download", detail: "Baixou um documento", phase: "before" },
+      { time: "10:12", type: "Início de jornada", detail: "Iniciou uma atividade", phase: "before" },
+      { time: "10:15", type: "Abandono", detail: "Saiu antes da conclusão", phase: "before" },
+    ],
+    followUpTemplate: [
+      { time: "11:02", type: "Login", detail: "Retornou ao Portal após o reengajamento", phase: "after" },
+      { time: "11:07", type: "Retomada de jornada", detail: "Retomou a atividade anteriormente abandonada", phase: "after" },
+      { time: "11:18", type: "Conclusão", detail: "Concluiu a jornada", phase: "after" },
+    ],
+  },
+
+  {
+    id: "empresa-b",
+    name: "Construtora Vega S.A.",
+    type: "Fornecedor",
+    lastAccess: "Hoje, 09:40",
+    events: [
+      { time: "09:20", type: "Login", detail: "Acesso ao Portal", phase: "before" },
+      { time: "09:25", type: "Busca", detail: "Realizou uma busca", phase: "before" },
+      { time: "09:30", type: "Visualização", detail: "Visualizou conteúdo", phase: "before" },
+      { time: "09:40", type: "Conclusão", detail: "Concluiu a jornada", phase: "before" },
+    ],
+    followUpTemplate: [],
+  },
+
+  {
+    id: "empresa-c",
+    name: "Distribuidora Atlântico ME",
+    type: "Fornecedor",
+    lastAccess: "Há 12 dias",
+    events: [
+      { time: "14:02", type: "Login", detail: "Acesso ao Portal", phase: "before" },
+      { time: "14:05", type: "Visualização", detail: "Visualizou uma página", phase: "before" },
+    ],
+    followUpTemplate: [],
+  },
+
+  {
+    id: "empresa-d",
+    name: "Tech Suprimentos Bahia",
+    type: "Fornecedor",
+    lastAccess: "Hoje, 09:35",
+    events: [
+      { time: "08:30", type: "Login", detail: "Acesso ao Portal", phase: "before" },
+      { time: "08:35", type: "Busca", detail: "Realizou uma busca", phase: "before" },
+      { time: "08:40", type: "Visualização", detail: "Visualizou conteúdo", phase: "before" },
+      { time: "08:48", type: "Início de jornada", detail: "Iniciou uma atividade", phase: "before" },
+      { time: "08:55", type: "Abandono", detail: "Saiu antes da conclusão", phase: "before" },
+      { time: "09:22", type: "Login", detail: "Retornou ao Portal após o reengajamento", phase: "after" },
+      { time: "09:27", type: "Retomada de jornada", detail: "Retomou a atividade anteriormente abandonada", phase: "after" },
+      { time: "09:35", type: "Conclusão", detail: "Concluiu a jornada com sucesso", phase: "after" },
+    ],
+    followUpTemplate: [
+      { time: "09:22", type: "Login", detail: "Retornou ao Portal após o reengajamento", phase: "after" },
+      { time: "09:27", type: "Retomada de jornada", detail: "Retomou a atividade anteriormente abandonada", phase: "after" },
+      { time: "09:35", type: "Conclusão", detail: "Concluiu a jornada com sucesso", phase: "after" },
+    ],
+  },
+
+  {
+    id: "empresa-e",
+    name: "Porto Seguro Logística",
+    type: "Cliente",
+    lastAccess: "Ontem, 16:20",
+    events: [
+      { time: "15:45", type: "Login", detail: "Acesso ao Portal", phase: "before" },
+      { time: "15:53", type: "Busca", detail: "Realizou uma busca", phase: "before" },
+      { time: "16:03", type: "Download", detail: "Baixou um documento", phase: "before" },
+      { time: "16:20", type: "Conclusão", detail: "Concluiu a atividade", phase: "before" },
+    ],
+    followUpTemplate: [],
+  },
+
+  {
+    id: "empresa-f",
+    name: "Serviços Integrados JK",
+    type: "Fornecedor",
+    lastAccess: "Hoje, 11:30",
+    events: [
+      { time: "11:01", type: "Login", detail: "Acesso ao Portal", phase: "before" },
+      { time: "11:05", type: "Busca", detail: "Busca por oportunidades", phase: "before" },
+      { time: "11:10", type: "Visualização", detail: "Visualizou oportunidade", phase: "before" },
+      { time: "11:16", type: "Busca", detail: "Realizou nova busca", phase: "before" },
+      { time: "11:22", type: "Visualização", detail: "Visualizou outro conteúdo", phase: "before" },
+      { time: "11:30", type: "Visualização", detail: "Continuou navegando", phase: "before" },
+    ],
+    followUpTemplate: [],
+  },
+];
+
+/* =========================================================
+   MOTOR DE ANÁLISE
+========================================================= */
+
+function analyzeUser(user) {
+  const originalEvents = user.events.filter(
+    (event) => event.phase !== "after"
+  );
+
+  const interactions = originalEvents.length;
+
+  const searches = originalEvents.filter(
+    (event) => event.type === "Busca"
+  ).length;
+
+  const views = originalEvents.filter(
+    (event) => event.type === "Visualização"
+  ).length;
+
+  const downloads = originalEvents.filter(
+    (event) => event.type === "Download"
+  ).length;
+
+  const started = originalEvents.some(
+    (event) => event.type === "Início de jornada"
+  );
+
+  const abandoned = originalEvents.some(
+    (event) => event.type === "Abandono"
+  );
+
+  const completed = originalEvents.some(
+    (event) => event.type === "Conclusão"
+  );
+
+  let score = 0;
+  const reasons = [];
+
+  if (interactions >= 6) {
+    score += 25;
+    reasons.push("Alto volume de interações");
+  } else if (interactions >= 4) {
+    score += 15;
+    reasons.push("Volume relevante de interações");
+  } else {
+    score += 5;
+    reasons.push("Baixo volume de interações");
+  }
+
+  if (searches >= 3) {
+    score += 15;
+    reasons.push("Realizou múltiplas buscas");
+  } else if (searches >= 1) {
+    score += 10;
+    reasons.push("Realizou buscas no Portal");
+  }
+
+  if (views >= 1) {
+    score += 10;
+    reasons.push("Visualizou conteúdos");
+  }
+
+  if (downloads >= 1) {
+    score += 10;
+    reasons.push("Realizou download");
+  }
+
+  if (started) {
+    score += 20;
+    reasons.push("Iniciou uma jornada");
+  }
+
+  if (abandoned) {
+    score += 25;
+    reasons.push("Abandonou antes da conclusão");
+  }
+
+  if (completed) {
+    score -= 25;
+    reasons.push("Jornada já concluída");
+  }
+
+  score = Math.max(0, Math.min(100, score));
+
+  let priority = "Baixa";
+
+  if (score >= 70) {
+    priority = "Alta";
+  } else if (score >= 40) {
+    priority = "Média";
+  }
+
+  let behavior = "Interação moderada";
+
+  if (abandoned && started) {
+    behavior = "Alta interação + abandono";
+  } else if (completed) {
+    behavior = "Jornada concluída";
+  } else if (interactions >= 6) {
+    behavior = "Alta frequência sem conclusão";
+  } else if (interactions <= 2) {
+    behavior = "Baixa interação";
+  }
+
+  return {
+    ...user,
+    interactions,
+    searches,
+    views,
+    downloads,
+    started,
+    abandoned,
+    completed,
+    score,
+    priority,
+    behavior,
+    reasons,
+  };
+}
+
+/* =========================================================
+   MOTOR DE REENGAJAMENTO
+========================================================= */
+
+function applyReengagementEngine(user) {
+  const postEvents = user.events.filter(
+    (event) => event.phase === "after"
+  );
+
+  const shouldReengage =
+    user.priority === "Alta" &&
+    user.abandoned &&
+    !user.completed;
+
+  if (!shouldReengage) {
+    return {
+      ...user,
+      automation: {
+        active: false,
+        status: "Monitoramento",
+        trigger: null,
+        action: null,
+        execution: null,
+        returned: false,
+        continued: false,
+        completed: false,
+      },
+    };
+  }
+
+  const returned = postEvents.some(
+    (event) => event.type === "Login"
+  );
+
+  const continued = postEvents.some(
+    (event) =>
+      event.type === "Retomada de jornada" ||
+      event.type === "Início de jornada"
+  );
+
+  const completed = postEvents.some(
+    (event) => event.type === "Conclusão"
+  );
+
+  let status = "Aguardando retorno";
+
+  if (returned) {
+    status = "Usuário retornou";
+  }
+
+  if (continued) {
+    status = "Jornada retomada";
+  }
+
+  if (completed) {
+    status = "Concluído";
+  }
+
+  return {
+    ...user,
+    automation: {
+      active: true,
+      trigger:
+        "Alta prioridade + abandono após demonstração de interesse",
+      action:
+        "Reengajamento gerado automaticamente",
+      execution:
+        "Olá! Notamos que você iniciou uma proposta no Portal mas não concluiu. Nossa equipe pode ajudar — retome de onde parou.",
+      status,
+      returned,
+      continued,
+      completed,
+    },
+  };
+}
+
+/* =========================================================
+   ROTAS
+========================================================= */
+
+function getRoute() {
+  const hash = window.location.hash || "#/";
+
+  if (hash === "#/users") {
+    return { page: "users", userId: null };
+  }
+
+  if (hash === "#/automations") {
+    return { page: "automations", userId: null };
+  }
+
+  if (hash.startsWith("#/automation/")) {
+    return {
+      page: "automation",
+      userId: decodeURIComponent(
+        hash.replace("#/automation/", "")
+      ),
+    };
+  }
+
+  if (hash.startsWith("#/user/")) {
+    return {
+      page: "details",
+      userId: decodeURIComponent(
+        hash.replace("#/user/", "")
+      ),
+    };
+  }
+
+  return {
+    page: "dashboard",
+    userId: null,
+  };
+}
+
+/* =========================================================
+   COMPONENTES BÁSICOS
+========================================================= */
+
+function PriorityBadge({ priority }) {
+  return (
+    <span className={`priority priority-${priority}`}>
+      {priority}
+    </span>
+  );
+}
+
+function AutomationBadge({ automation }) {
+  if (!automation.active) {
+    return (
+      <span className="automation-badge automation-off">
+        Monitoramento
+      </span>
+    );
+  }
+
+  if (automation.completed) {
+    return (
+      <span className="automation-badge automation-success">
+        Concluído
+      </span>
+    );
+  }
+
+  if (automation.continued || automation.returned) {
+    return (
+      <span className="automation-badge automation-progress">
+        Em andamento
+      </span>
+    );
+  }
+
+  return (
+    <span className="automation-badge automation-active">
+      Aguardando
+    </span>
+  );
+}
+
+function StatCard({ value, label, type }) {
+  return (
+    <article className="stat-card">
+      <div className={`stat-line stat-line-${type}`} />
+
+      <div>
+        <strong>{value}</strong>
+        <span>{label}</span>
+      </div>
+    </article>
+  );
+}
+
+function Header({
+  goHome,
+  goUsers,
+  goAutomations,
+  page,
+  theme,
+  toggleTheme,
+}) {
+  const usersActive =
+    page === "users" || page === "details";
+
+  const automationActive =
+    page === "automations" || page === "automation";
+
+  return (
+    <header className="topbar">
+      <div className="topbar-content">
+        <button className="brand" onClick={goHome}>
+          <span>PETRONECT</span>
+          <strong>Insights</strong>
+        </button>
+
+        <nav className="main-nav">
+          <button
+            className={page === "dashboard" ? "nav-active" : ""}
+            onClick={goHome}
+          >
+            Dashboard
+          </button>
+
+          <button
+            className={usersActive ? "nav-active" : ""}
+            onClick={goUsers}
+          >
+            Usuários
+          </button>
+
+          <button
+            className={automationActive ? "nav-active" : ""}
+            onClick={goAutomations}
+          >
+            Automações
+          </button>
+        </nav>
+
+        <div className="header-actions">
+          <div className="mvp-badge">
+            <span className="status-dot" />
+            MVP
+          </div>
+
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+          >
+            <span>{theme === "light" ? "☾" : "☀"}</span>
+
+            <span className="theme-label">
+              {theme === "light" ? "Escuro" : "Claro"}
+            </span>
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function MiniBar({
+  label,
+  value,
+  max,
+  tone = "blue",
+}) {
+  const width =
+    max > 0 ? Math.max(4, (value / max) * 100) : 0;
+
+  return (
+    <div className="mini-bar-row">
+      <div className="mini-bar-heading">
+        <span>{label}</span>
+        <strong>{value}</strong>
+      </div>
+
+      <div className="mini-bar-track">
+        <div
+          className={`mini-bar-fill mini-${tone}`}
+          style={{ width: `${width}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
+function Dashboard({
+  users,
+  onSeeAll,
+  onSelectUser,
+  openAutomations,
+}) {
+  const priorityUsers = users.filter(
+    (user) =>
+      user.priority === "Alta" ||
+      user.priority === "Média"
+  );
+
+  const activeAutomations = users.filter(
+    (user) => user.automation.active
+  );
+
+  const returned = activeAutomations.filter(
+    (user) => user.automation.returned
+  ).length;
+
+  const continued = activeAutomations.filter(
+    (user) => user.automation.continued
+  ).length;
+
+  const completed = activeAutomations.filter(
+    (user) => user.automation.completed
+  ).length;
+
+  const successRate =
+    activeAutomations.length > 0
+      ? Math.round(
+          (completed / activeAutomations.length) * 100
+        )
+      : 0;
+
+  const priorityCounts = {
+    Alta: users.filter((user) => user.priority === "Alta").length,
+    Média: users.filter((user) => user.priority === "Média").length,
+    Baixa: users.filter((user) => user.priority === "Baixa").length,
+  };
+
+  const maxPriority = Math.max(
+    priorityCounts.Alta,
+    priorityCounts.Média,
+    priorityCounts.Baixa,
+    1
+  );
+
+  return (
+    <>
+      <section className="hero">
+        <div className="hero-tag">
+          Inteligência comportamental do Portal
+        </div>
+
+        <h1>
+          Quem merece atenção
+          <span> agora?</span>
+        </h1>
+
+        <p>
+          O Petronect Insights transforma eventos de navegação
+          em comportamento, prioridade e ações automáticas de
+          reengajamento.
+        </p>
+      </section>
+
+      <section className="stats-grid">
+        <StatCard
+          value={users.length}
+          label="Usuários analisados"
+          type="blue"
+        />
+
+        <StatCard
+          value={
+            users.filter((user) =>
+              user.behavior.includes("Alta")
+            ).length
+          }
+          label="Alta interação"
+          type="green"
+        />
+
+        <StatCard
+          value={
+            users.filter((user) => user.abandoned).length
+          }
+          label="Abandonos"
+          type="blue"
+        />
+
+        <StatCard
+          value={activeAutomations.length}
+          label="Reengajamentos automáticos"
+          type="green"
+        />
+      </section>
+
+      <section className="results-strip">
+        <div>
+          <span>Retornaram ao Portal</span>
+          <strong>{returned}</strong>
+        </div>
+
+        <div>
+          <span>Retomaram a jornada</span>
+          <strong>{continued}</strong>
+        </div>
+
+        <div>
+          <span>Concluíram</span>
+          <strong>{completed}</strong>
+        </div>
+
+        <div>
+          <span>Taxa de sucesso</span>
+          <strong>{successRate}%</strong>
+        </div>
+      </section>
+
+      <section className="charts-grid">
+        <article className="chart-card">
+          <div className="chart-heading">
+            <div>
+              <span className="eyebrow">COMPORTAMENTO</span>
+              <h2>Distribuição por prioridade</h2>
+            </div>
+          </div>
+
+          <div className="bars-list">
+            <MiniBar
+              label="Alta"
+              value={priorityCounts.Alta}
+              max={maxPriority}
+              tone="red"
+            />
+
+            <MiniBar
+              label="Média"
+              value={priorityCounts.Média}
+              max={maxPriority}
+              tone="yellow"
+            />
+
+            <MiniBar
+              label="Baixa"
+              value={priorityCounts.Baixa}
+              max={maxPriority}
+              tone="gray"
+            />
+          </div>
+        </article>
+
+        <article className="chart-card">
+          <div className="chart-heading">
+            <div>
+              <span className="eyebrow">REENGAJAMENTO</span>
+              <h2>Funil de resultado</h2>
+            </div>
+
+            <button
+              className="text-button"
+              onClick={openAutomations}
+            >
+              Central →
+            </button>
+          </div>
+
+          <div className="funnel">
+            <div>
+              <strong>{activeAutomations.length}</strong>
+              <span>Acionados</span>
+            </div>
+
+            <div>
+              <strong>{returned}</strong>
+              <span>Retornaram</span>
+            </div>
+
+            <div>
+              <strong>{continued}</strong>
+              <span>Retomaram</span>
+            </div>
+
+            <div>
+              <strong>{completed}</strong>
+              <span>Concluíram</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section className="main-panel">
+        <div className="panel-header">
+          <div>
+            <span className="eyebrow">PRIORIDADES</span>
+
+            <h2>Quem merece atenção agora</h2>
+
+            <p>
+              Usuários priorizados automaticamente pelo motor
+              comportamental.
+            </p>
+          </div>
+
+          <button
+            className="primary-button"
+            onClick={onSeeAll}
+          >
+            Ver todos →
+          </button>
+        </div>
+
+        <div className="user-list">
+          <div className="table-header">
+            <span>Usuário</span>
+            <span>Comportamento</span>
+            <span>Score</span>
+            <span>Prioridade</span>
+            <span>Automação</span>
+          </div>
+
+          {priorityUsers.slice(0, 5).map((user) => (
+            <button
+              className="user-row"
+              key={user.id}
+              onClick={() => onSelectUser(user)}
+            >
+              <div className="company-info">
+                <div className="company-avatar">
+                  {user.name[0].toUpperCase()}
+                </div>
+
+                <div>
+                  <strong>{user.name}</strong>
+                  <span>{user.type}</span>
+                </div>
+              </div>
+
+              <div className="behavior-text">
+                {user.behavior}
+              </div>
+
+              <div className="score-cell">
+                <strong>{user.score}</strong>
+                <span>/100</span>
+              </div>
+
+              <div>
+                <PriorityBadge priority={user.priority} />
+              </div>
+
+              <div>
+                <AutomationBadge
+                  automation={user.automation}
+                />
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="engine-banner">
+        <div className="engine-icon">◎</div>
+
+        <div>
+          <span>MOTOR AUTOMÁTICO</span>
+
+          <h3>
+            Detectar. Priorizar. Agir. Medir.
+          </h3>
+
+          <p>
+            A análise não termina no abandono. O sistema acompanha
+            automaticamente se o usuário retornou e concluiu a jornada.
+          </p>
+        </div>
+
+        <button onClick={openAutomations}>
+          Ver automações →
+        </button>
+      </section>
+    </>
+  );
+}
+
+/* =========================================================
+   USUÁRIOS
+========================================================= */
+
+function UsersPage({
+  users,
+  onBack,
+  onSelectUser,
+}) {
+  const [search, setSearch] = useState("");
+  const [priorityFilter, setPriorityFilter] =
+    useState("Todas");
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const searchOk =
+        user.name
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        user.behavior
+          .toLowerCase()
+          .includes(search.toLowerCase());
+
+      const priorityOk =
+        priorityFilter === "Todas" ||
+        user.priority === priorityFilter;
+
+      return searchOk && priorityOk;
+    });
+  }, [users, search, priorityFilter]);
+
+  return (
+    <section className="page-section">
+      <button
+        className="back-button"
+        onClick={onBack}
+      >
+        ← Voltar
+      </button>
+
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">USUÁRIOS</span>
+
+          <h1>Visão comportamental</h1>
+
+          <p>
+            Explore os usuários analisados, seus comportamentos
+            e prioridades.
+          </p>
+        </div>
+
+        <div className="result-count">
+          <strong>{filteredUsers.length}</strong>
+          <span>resultados</span>
+        </div>
+      </div>
+
+      <div className="filters">
+        <input
+          type="text"
+          placeholder="Buscar empresa ou comportamento..."
+          value={search}
+          onChange={(event) =>
+            setSearch(event.target.value)
+          }
+        />
+
+        <select
+          value={priorityFilter}
+          onChange={(event) =>
+            setPriorityFilter(event.target.value)
+          }
+        >
+          <option>Todas</option>
+          <option>Alta</option>
+          <option>Média</option>
+          <option>Baixa</option>
+        </select>
+      </div>
+
+      <div className="users-grid">
+        {filteredUsers.map((user) => (
+          <article className={`user-card user-card-priority-${user.priority}`} key={user.id}>
+            <div className="user-card-top">
+              <div className="company-avatar large">
+                {user.name[0].toUpperCase()}
+              </div>
+
+              <PriorityBadge priority={user.priority} />
+            </div>
+
+            <h3>{user.name}</h3>
+
+            <span className="user-type-label">
+              {user.type}
+            </span>
+
+            <div className="user-card-behavior">
+              {user.behavior}
+            </div>
+
+            <div className="user-card-stats">
+              <div>
+                <span>Score</span>
+                <strong>{user.score}</strong>
+              </div>
+
+              <div>
+                <span>Interações</span>
+                <strong>{user.interactions}</strong>
+              </div>
+            </div>
+
+            <div className="user-card-automation">
+              <span>Automação</span>
+
+              <AutomationBadge
+                automation={user.automation}
+              />
+            </div>
+
+            <button
+              className="card-button"
+              onClick={() => onSelectUser(user)}
+            >
+              Ver análise completa →
+            </button>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* =========================================================
+   CENTRAL DE AUTOMAÇÕES
+========================================================= */
+
+function AutomationsPage({
+  users,
+  onBack,
+  openAutomation,
+}) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] =
+    useState("Todos");
+
+  const activeUsers = users.filter(
+    (user) => user.automation.active
+  );
+
+  const filtered = activeUsers.filter((user) => {
+    const searchOk = user.name
+      .toLowerCase()
+      .includes(search.toLowerCase());
+
+    let statusOk = true;
+
+    if (statusFilter === "Aguardando") {
+      statusOk =
+        !user.automation.returned &&
+        !user.automation.completed;
+    }
+
+    if (statusFilter === "Em andamento") {
+      statusOk =
+        user.automation.returned &&
+        !user.automation.completed;
+    }
+
+    if (statusFilter === "Concluído") {
+      statusOk = user.automation.completed;
+    }
+
+    return searchOk && statusOk;
+  });
+
+  const waiting = activeUsers.filter(
+    (user) => !user.automation.returned
+  ).length;
+
+  const progress = activeUsers.filter(
+    (user) =>
+      user.automation.returned &&
+      !user.automation.completed
+  ).length;
+
+  const completed = activeUsers.filter(
+    (user) => user.automation.completed
+  ).length;
+
+  return (
+    <section className="page-section">
+      <button
+        className="back-button"
+        onClick={onBack}
+      >
+        ← Voltar
+      </button>
+
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">
+            CENTRAL DE AUTOMAÇÕES
+          </span>
+
+          <h1>Reengajamentos</h1>
+
+          <p>
+            Acompanhe os usuários acionados automaticamente
+            pelo Petronect Insights.
+          </p>
+        </div>
+      </div>
+
+      <section className="automation-summary-grid">
+        <div>
+          <span>Total acionados</span>
+          <strong>{activeUsers.length}</strong>
+        </div>
+
+        <div>
+          <span>Aguardando retorno</span>
+          <strong>{waiting}</strong>
+        </div>
+
+        <div>
+          <span>Em andamento</span>
+          <strong>{progress}</strong>
+        </div>
+
+        <div>
+          <span>Concluídos</span>
+          <strong>{completed}</strong>
+        </div>
+      </section>
+
+      <div className="filters">
+        <input
+          value={search}
+          placeholder="Buscar empresa..."
+          onChange={(event) =>
+            setSearch(event.target.value)
+          }
+        />
+
+        <select
+          value={statusFilter}
+          onChange={(event) =>
+            setStatusFilter(event.target.value)
+          }
+        >
+          <option>Todos</option>
+          <option>Aguardando</option>
+          <option>Em andamento</option>
+          <option>Concluído</option>
+        </select>
+      </div>
+
+      <div className="automation-list">
+        {filtered.map((user) => (
+          <article
+            className="automation-list-card"
+            key={user.id}
+          >
+            <div className="automation-list-main">
+              <div className="company-avatar">
+                {user.name[0].toUpperCase()}
+              </div>
+
+              <div>
+                <strong>{user.name}</strong>
+
+                <span>{user.behavior}</span>
+              </div>
+            </div>
+
+            <div className="automation-list-info">
+              <span>Score</span>
+              <strong>{user.score}</strong>
+            </div>
+
+            <div className="automation-list-info">
+              <span>Status</span>
+
+              <AutomationBadge
+                automation={user.automation}
+              />
+            </div>
+
+            <div className="automation-list-info">
+              <span>Resultado</span>
+
+              <strong>
+                {user.automation.completed
+                  ? "Concluiu"
+                  : user.automation.continued
+                    ? "Retomou jornada"
+                    : user.automation.returned
+                      ? "Retornou"
+                      : "Aguardando"}
+              </strong>
+            </div>
+
+            <button
+              className="details-button"
+              onClick={() =>
+                openAutomation(user)
+              }
+            >
+              Acompanhar →
+            </button>
+          </article>
+        ))}
+
+        {filtered.length === 0 && (
+          <div className="no-results">
+            Nenhuma automação encontrada.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ScoreRing({ score }) {
+  const r = 28;
+  const circ = 2 * Math.PI * r;
+  const fill = circ - (score / 100) * circ;
+  const color = score >= 70 ? "#d85b5b" : score >= 40 ? "#d7a633" : "#8d9aad";
+  return (
+    <div style={{ position: "relative", width: 80, height: 80, flexShrink: 0 }}>
+      <svg width="80" height="80" style={{ transform: "rotate(-90deg)" }}>
+        <circle cx="40" cy="40" r={r} fill="none" stroke="var(--border)" strokeWidth="6" />
+        <circle cx="40" cy="40" r={r} fill="none" stroke={color} strokeWidth="6"
+          strokeDasharray={circ} strokeDashoffset={fill} strokeLinecap="round" />
+      </svg>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <strong style={{ fontSize: 20, lineHeight: 1 }}>{score}</strong>
+        <small style={{ color: "var(--muted)", fontSize: 9 }}>/100</small>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   DETALHES DO USUÁRIO
+========================================================= */
+
+function UserDetails({
+  user,
+  onBack,
+  openAutomation,
+}) {
+  if (!user) return null;
+
+  return (
+    <section className="page-section">
+      <button
+        className="back-button"
+        onClick={onBack}
+      >
+        ← Voltar
+      </button>
+
+      <div className="profile-header">
+        <div className="profile-main">
+          <div className="company-avatar profile">
+            {user.name[0].toUpperCase()}
+          </div>
+
+          <div>
+            <span className="eyebrow">
+              ANÁLISE DO USUÁRIO
+            </span>
+
+            <h1>{user.name}</h1>
+
+            <div className="profile-meta">
+              <span>{user.type}</span>
+              <span>•</span>
+              <span>
+                Último acesso: {user.lastAccess}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="profile-priority">
+          <span>Prioridade atual</span>
+
+          <PriorityBadge
+            priority={user.priority}
+          />
+        </div>
+      </div>
+
+      <div className="detail-stats">
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <ScoreRing score={user.score} />
+          <div>
+            <span>Score comportamental</span>
+            <strong style={{ fontSize: 31 }}>{user.score}</strong>
+            <small>/100</small>
+          </div>
+        </div>
+
+        <div>
+          <span>Interações</span>
+          <strong>{user.interactions}</strong>
+        </div>
+
+        <div>
+          <span>Buscas</span>
+          <strong>{user.searches}</strong>
+        </div>
+
+        <div>
+          <span>Visualizações</span>
+          <strong>{user.views}</strong>
+        </div>
+
+        <div>
+          <span>Downloads</span>
+          <strong>{user.downloads}</strong>
+        </div>
+      </div>
+
+      <div className="details-layout">
+        <article className="detail-panel">
+          <span className="eyebrow">
+            JORNADA
+          </span>
+
+          <h2>Linha do tempo</h2>
+
+          <div className="timeline">
+            {user.events.map((event, index) => (
+              <div
+                className={`timeline-item ${
+                  event.phase === "after"
+                    ? "timeline-after"
+                    : ""
+                }`}
+                key={`${event.time}-${index}`}
+              >
+                <div className="timeline-marker">
+                  <span className={event.type === "Abandono" ? "marker-abandon" : ""} />
+                </div>
+
+                <div className="timeline-time">
+                  {event.time}
+                </div>
+
+                <div className="timeline-content">
+                  <strong>{event.type}</strong>
+                  <span>{event.detail}</span>
+
+                  {event.phase === "after" && (
+                    <small>
+                      Após reengajamento
+                    </small>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <div className="details-column">
+          <article className="detail-panel behavior-panel">
+            <span className="eyebrow">
+              COMPORTAMENTO
+            </span>
+
+            <h2>{user.behavior}</h2>
+
+            <p>
+              Classificação produzida automaticamente
+              a partir dos eventos observados.
+            </p>
+          </article>
+
+          <article className="detail-panel">
+            <span className="eyebrow">
+              POR QUE?
+            </span>
+
+            <h2>
+              Motivos da classificação
+            </h2>
+
+            <div className="reason-list">
+              {user.reasons.map((reason) => (
+                <div
+                  className="reason"
+                  key={reason}
+                >
+                  <span>✓</span>
+                  {reason}
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article
+            className={
+              user.automation.active
+                ? "automation-card active"
+                : "automation-card"
+            }
+          >
+            <span>MOTOR AUTOMÁTICO</span>
+
+            {user.automation.active ? (
+              <>
+                <h2>
+                  Reengajamento ativado
+                </h2>
+
+                <p>
+                  O usuário atende automaticamente
+                  aos critérios de reengajamento.
+                </p>
+
+                <div className="automation-status-line">
+                  <span>Status atual</span>
+
+                  <strong>
+                    {user.automation.status}
+                  </strong>
+                </div>
+
+                <button
+                  onClick={() =>
+                    openAutomation(user)
+                  }
+                >
+                  Ver acompanhamento →
+                </button>
+              </>
+            ) : (
+              <>
+                <h2>
+                  Monitoramento ativo
+                </h2>
+
+                <p>
+                  Nenhum acionamento é necessário
+                  neste momento.
+                </p>
+              </>
+            )}
+          </article>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* =========================================================
+   ACOMPANHAMENTO INDIVIDUAL
+========================================================= */
+
+function Step({
+  title,
+  description,
+  state,
+}) {
+  return (
+    <div className={`flow-step flow-${state}`}>
+      <div className="flow-icon">
+        {state === "done"
+          ? "✓"
+          : state === "active"
+            ? "●"
+            : "○"}
+      </div>
+
+      <div>
+        <strong>{title}</strong>
+        <span>{description}</span>
+      </div>
+    </div>
+  );
+}
+
+function AutomationPage({
+  user,
+  onBack,
+  simulate,
+  reset,
+}) {
+  if (!user) return null;
+
+  const automation = user.automation;
+
+  if (!automation.active) {
+    return (
+      <section className="empty-state">
+        <span className="eyebrow">
+          AUTOMAÇÃO
+        </span>
+
+        <h1>
+          Nenhum reengajamento necessário.
+        </h1>
+
+        <p>
+          Este usuário não atende aos critérios
+          de acionamento automático.
+        </p>
+
+        <button onClick={onBack}>
+          ← Voltar
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <section className="page-section">
+      <button
+        className="back-button"
+        onClick={onBack}
+      >
+        ← Voltar
+      </button>
+
+      <div className="automation-hero">
+        <div className="automation-orb">
+          ◎
+        </div>
+
+        <span className="eyebrow">
+          MOTOR DE REENGAJAMENTO
+        </span>
+
+        <h1>
+          Acompanhamento automático
+        </h1>
+
+        <p>
+          O sistema detectou o momento de agir
+          e acompanha os novos eventos do usuário.
+        </p>
+      </div>
+
+      <div className="automation-layout">
+        <article className="automation-main-card">
+          <div className="automation-card-header">
+            <div>
+              <span>Usuário</span>
+              <h2>{user.name}</h2>
+            </div>
+
+            <AutomationBadge
+              automation={automation}
+            />
+          </div>
+
+          <div className="automation-details">
+            <div>
+              <span>Gatilho detectado</span>
+              <strong>
+                {automation.trigger}
+              </strong>
+            </div>
+
+            <div>
+              <span>Ação gerada</span>
+              <strong>
+                {automation.action}
+              </strong>
+            </div>
+
+            <div style={{ gridColumn: "1 / -1" }}>
+              <span>Mensagem enviada (simulada)</span>
+              <strong style={{ fontStyle: "italic", fontWeight: 500 }}>
+                "{automation.execution}"
+              </strong>
+            </div>
+          </div>
+
+          <div className="automation-divider" />
+
+          <span className="eyebrow">
+            CICLO AUTOMÁTICO
+          </span>
+
+          <div className="flow">
+            <Step
+              title="Comportamento identificado"
+              description={user.behavior}
+              state="done"
+            />
+
+            <Step
+              title="Usuário priorizado"
+              description={`Prioridade ${user.priority} • Score ${user.score}`}
+              state="done"
+            />
+
+            <Step
+              title="Reengajamento gerado"
+              description="Ação gerada automaticamente."
+              state="done"
+            />
+
+            <Step
+              title="Retorno ao Portal"
+              description={
+                automation.returned
+                  ? "Novo login detectado automaticamente."
+                  : "Aguardando novo acesso."
+              }
+              state={
+                automation.returned
+                  ? "done"
+                  : "active"
+              }
+            />
+
+            <Step
+              title="Jornada retomada"
+              description={
+                automation.continued
+                  ? "Retomada detectada."
+                  : "Ainda não detectada."
+              }
+              state={
+                automation.continued
+                  ? "done"
+                  : automation.returned
+                    ? "active"
+                    : "pending"
+              }
+            />
+
+            <Step
+              title="Conclusão"
+              description={
+                automation.completed
+                  ? "Jornada concluída."
+                  : "Aguardando conclusão."
+              }
+              state={
+                automation.completed
+                  ? "done"
+                  : automation.continued
+                    ? "active"
+                    : "pending"
+              }
+            />
+          </div>
+        </article>
+
+        <aside className="automation-side-card">
+          <span className="eyebrow">
+            RESULTADO
+          </span>
+
+          <h2>
+            {automation.completed
+              ? "Reengajamento bem-sucedido"
+              : automation.returned
+                ? "Usuário reengajado"
+                : "Aguardando resposta"}
+          </h2>
+
+          <div className="result-checks">
+            <div>
+              <span>Retornou ao Portal</span>
+
+              <strong>
+                {automation.returned
+                  ? "Sim"
+                  : "Pendente"}
+              </strong>
+            </div>
+
+            <div>
+              <span>Retomou a jornada</span>
+
+              <strong>
+                {automation.continued
+                  ? "Sim"
+                  : "Pendente"}
+              </strong>
+            </div>
+
+            <div>
+              <span>Concluiu</span>
+
+              <strong>
+                {automation.completed
+                  ? "Sim"
+                  : "Pendente"}
+              </strong>
+            </div>
+          </div>
+
+          {!automation.returned ? (
+            <button
+              className="simulation-button"
+              onClick={() => simulate(user)}
+            >
+              ▶ Simular novos eventos
+            </button>
+          ) : (
+            <button
+              className="secondary-button full"
+              onClick={() => reset(user)}
+            >
+              Reiniciar demonstração
+            </button>
+          )}
+
+          <p className="simulation-note">
+            No MVP, o botão simula novos eventos
+            chegando do Portal. Em produção, esses
+            eventos chegariam automaticamente.
+          </p>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+/* =========================================================
+   APP
+========================================================= */
+
+function App() {
+  const [route, setRoute] =
+    useState(getRoute());
+
+  const [theme, setTheme] = useState(() => {
+    const saved =
+      localStorage.getItem("petronect-theme");
+
+    if (saved === "dark" || saved === "light") {
+      return saved;
+    }
+
+    return "light";
+  });
+
+  const [simulatedEvents, setSimulatedEvents] =
+    useState(() => {
+      try {
+        return (
+          JSON.parse(
+            localStorage.getItem(
+              "petronect-simulated-events"
+            )
+          ) || {}
+        );
+      } catch {
+        return {};
+      }
+    });
+
+  useEffect(() => {
+    localStorage.setItem(
+      "petronect-theme",
+      theme
+    );
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "petronect-simulated-events",
+      JSON.stringify(simulatedEvents)
+    );
+  }, [simulatedEvents]);
+
+  useEffect(() => {
+    function syncRoute() {
+      setRoute(getRoute());
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }
+
+    if (!window.location.hash) {
+      window.location.hash = "#/";
+    }
+
+    syncRoute();
+
+    window.addEventListener(
+      "hashchange",
+      syncRoute
+    );
+
+    return () =>
+      window.removeEventListener(
+        "hashchange",
+        syncRoute
+      );
+  }, []);
+
+  const analyzedUsers = useMemo(() => {
+    return baseUsers.map((baseUser) => {
+      const extra =
+        simulatedEvents[baseUser.id] || [];
+
+      const user = {
+        ...baseUser,
+        events: [
+          ...baseUser.events,
+          ...extra,
+        ],
+      };
+
+      return applyReengagementEngine(
+        analyzeUser(user)
+      );
+    });
+  }, [simulatedEvents]);
+
+  const selectedUser = route.userId
+    ? analyzedUsers.find(
+        (user) => user.id === route.userId
+      )
+    : null;
+
+  function toggleTheme() {
+    setTheme((current) =>
+      current === "light"
+        ? "dark"
+        : "light"
+    );
+  }
+
+  function goHome() {
+    window.location.hash = "#/";
+  }
+
+  function goUsers() {
+    window.location.hash = "#/users";
+  }
+
+  function goAutomations() {
+    window.location.hash = "#/automations";
+  }
+
+  function goBack() {
+    window.history.back();
+  }
+
+  function openUser(user) {
+    window.location.hash =
+      `#/user/${encodeURIComponent(user.id)}`;
+  }
+
+  function openAutomation(user) {
+    window.location.hash =
+      `#/automation/${encodeURIComponent(user.id)}`;
+  }
+
+  function simulateFollowUp(user) {
+    setSimulatedEvents((current) => ({
+      ...current,
+      [user.id]: user.followUpTemplate,
+    }));
+  }
+
+  function resetFollowUp(user) {
+    setSimulatedEvents((current) => {
+      const copy = { ...current };
+      delete copy[user.id];
+      return copy;
+    });
+  }
+
+  return (
+    <div
+      className="app"
+      data-theme={theme}
+    >
+      <style>{`
+        * {
+          box-sizing: border-box;
+        }
+
+        html,
+        body,
+        #root {
+          margin: 0;
+          width: 100%;
+          min-height: 100%;
+        }
+
+        body {
+          min-width: 320px;
+          overflow-x: hidden;
+        }
+
+        button,
+        input,
+        select {
+          font: inherit;
+        }
+
+        button {
+          cursor: pointer;
+        }
+
+        .app {
+          --blue: #29488f;
+          --blue-light: #5474c8;
+
+          --green: #71bf44;
+          --green-dark: #4f9130;
+
+          --page: #f4f6f9;
+          --surface: #ffffff;
+          --surface-soft: #f7f9fc;
+          --surface-hover: #f1f5f9;
+
+          --text: #17284d;
+          --text-secondary: #485872;
+          --muted: #758197;
+
+          --border: #e2e7ef;
+
+          --shadow:
+            0 14px 42px rgba(31,49,95,.07);
+
+          min-height: 100vh;
+
+          background:
+            radial-gradient(
+              circle at 88% 0%,
+              rgba(113,191,68,.08),
+              transparent 25%
+            ),
+            var(--page);
+
+          color: var(--text);
+
+          font-family:
+            Inter,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            Arial,
+            sans-serif;
+
+          transition:
+            background .25s ease,
+            color .25s ease;
+        }
+
+        .app[data-theme="dark"] {
+          --blue: #7897e8;
+          --blue-light: #91aaf0;
+
+          --green: #83d454;
+          --green-dark: #9ee577;
+
+          --page: #090e1a;
+          --surface: #121928;
+          --surface-soft: #171f31;
+          --surface-hover: #1a2337;
+
+          --text: #f5f7fb;
+          --text-secondary: #c8d0df;
+          --muted: #96a3b7;
+
+          --border: #283249;
+
+          --shadow:
+            0 18px 50px rgba(0,0,0,.25);
+        }
+
+        h1,
+        h2,
+        h3,
+        strong {
+          color: var(--text);
+        }
+
+        .topbar {
+          width: 100%;
+          min-height: 82px;
+
+          position: sticky;
+          top: 0;
+          z-index: 100;
+
+          background: var(--surface);
+
+          border-bottom:
+            1px solid var(--border);
+        }
+
+        .topbar-content {
+          width:
+            min(
+              1320px,
+              calc(100% - 48px)
+            );
+
+          min-height: 82px;
+          margin: 0 auto;
+
+          display: grid;
+
+          grid-template-columns:
+            auto
+            1fr
+            auto;
+
+          align-items: center;
+          gap: 28px;
+        }
+
+        .brand {
+          padding: 0;
+          border: 0;
+          background: none;
+
+          display: flex;
+          flex-direction: column;
+
+          text-align: left;
+        }
+
+        .brand span {
+          color: var(--green);
+
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: .16em;
+        }
+
+        .brand strong {
+          color: var(--blue);
+
+          font-size: 22px;
+          letter-spacing: -.04em;
+        }
+
+        .main-nav {
+          display: flex;
+          justify-content: center;
+          gap: 6px;
+        }
+
+        .main-nav button {
+          padding: 9px 13px;
+
+          border: 0;
+          border-radius: 999px;
+
+          background: transparent;
+          color: var(--text-secondary);
+
+          font-size: 13px;
+          font-weight: 650;
+        }
+
+        .main-nav button:hover {
+          background: var(--surface-hover);
+        }
+
+        .main-nav .nav-active {
+          background: rgba(113,191,68,.14);
+          color: var(--green-dark);
+        }
+
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+        }
+
+        .mvp-badge {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+
+          padding: 9px 12px;
+
+          border-radius: 999px;
+
+          background: rgba(113,191,68,.14);
+          color: var(--green-dark);
+
+          font-size: 12px;
+          font-weight: 750;
+        }
+
+        .status-dot {
+          width: 7px;
+          height: 7px;
+
+          border-radius: 50%;
+          background: var(--green);
+        }
+
+        .theme-toggle {
+          min-height: 40px;
+
+          padding: 8px 13px;
+
+          border: 1px solid var(--border);
+          border-radius: 999px;
+
+          background: var(--surface);
+          color: var(--text);
+
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        main {
+          width:
+            min(
+              1320px,
+              calc(100% - 48px)
+            );
+
+          margin: 0 auto;
+          padding: 68px 0 85px;
+        }
+
+        .hero {
+          max-width: 930px;
+
+          margin: 0 auto 52px;
+
+          text-align: center;
+        }
+
+        .hero-tag {
+          display: inline-flex;
+
+          padding: 9px 14px;
+          margin-bottom: 24px;
+
+          border-radius: 999px;
+
+          background: rgba(113,191,68,.14);
+          color: var(--green-dark);
+
+          font-size: 13px;
+          font-weight: 750;
+        }
+
+        .hero h1 {
+          margin: 0;
+
+          font-size:
+            clamp(48px,5.5vw,76px);
+
+          line-height: .98;
+          letter-spacing: -.055em;
+        }
+
+        .hero h1 span {
+          color: var(--green);
+        }
+
+        .hero p {
+          max-width: 750px;
+
+          margin: 26px auto 0;
+
+          color: var(--text-secondary);
+
+          font-size: 18px;
+          font-weight: 500;
+          line-height: 1.65;
+        }
+
+        .stats-grid {
+          display: grid;
+
+          grid-template-columns:
+            repeat(4,minmax(0,1fr));
+
+          gap: 16px;
+          margin-bottom: 18px;
+        }
+
+        .stat-card,
+        .main-panel,
+        .chart-card,
+        .user-card,
+        .profile-header,
+        .detail-panel,
+        .automation-main-card,
+        .automation-side-card,
+        .automation-summary-grid > div,
+        .automation-list-card {
+          background: var(--surface);
+
+          border: 1px solid var(--border);
+
+          box-shadow: var(--shadow);
+        }
+
+        .stat-card {
+          min-height: 158px;
+
+          padding: 26px;
+
+          border-radius: 26px;
+
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+
+        .stat-line {
+          width: 42px;
+          height: 5px;
+
+          border-radius: 999px;
+        }
+
+        .stat-line-blue {
+          background: var(--blue);
+        }
+
+        .stat-line-green {
+          background: var(--green);
+        }
+
+        .stat-card strong {
+          display: block;
+
+          font-size: 45px;
+          font-weight: 750;
+          letter-spacing: -.05em;
+        }
+
+        .stat-card span {
+          display: block;
+
+          margin-top: 6px;
+
+          color: var(--text-secondary);
+
+          font-size: 14px;
+          font-weight: 550;
+        }
+
+        .results-strip {
+          display: grid;
+
+          grid-template-columns:
+            repeat(4,1fr);
+
+          margin-bottom: 30px;
+
+          border: 1px solid var(--border);
+          border-radius: 22px;
+
+          overflow: hidden;
+
+          background: var(--surface);
+        }
+
+        .results-strip > div {
+          padding: 20px 24px;
+
+          border-right:
+            1px solid var(--border);
+        }
+
+        .results-strip > div:last-child {
+          border-right: 0;
+        }
+
+        .results-strip span {
+          display: block;
+
+          color: var(--muted);
+
+          font-size: 11px;
+        }
+
+        .results-strip strong {
+          display: block;
+
+          margin-top: 5px;
+
+          font-size: 24px;
+        }
+
+        .charts-grid {
+          display: grid;
+
+          grid-template-columns:
+            1fr
+            1fr;
+
+          gap: 18px;
+          margin-bottom: 30px;
+        }
+
+        .chart-card {
+          padding: 28px;
+
+          border-radius: 28px;
+        }
+
+        .chart-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+
+          gap: 20px;
+        }
+
+        .chart-heading h2 {
+          margin: 7px 0 0;
+
+          font-size: 25px;
+        }
+
+        .eyebrow {
+          display: block;
+
+          color: var(--green);
+
+          font-size: 11px;
+          font-weight: 850;
+          letter-spacing: .14em;
+        }
+
+        .text-button {
+          padding: 0;
+
+          border: 0;
+          background: none;
+
+          color: var(--blue);
+
+          font-weight: 750;
+        }
+
+        .bars-list {
+          margin-top: 30px;
+
+          display: flex;
+          flex-direction: column;
+          gap: 21px;
+        }
+
+        .mini-bar-heading {
+          margin-bottom: 8px;
+
+          display: flex;
+          justify-content: space-between;
+        }
+
+        .mini-bar-heading span {
+          color: var(--text-secondary);
+
+          font-size: 13px;
+        }
+
+        .mini-bar-track {
+          width: 100%;
+          height: 9px;
+
+          border-radius: 999px;
+
+          background: var(--surface-soft);
+
+          overflow: hidden;
+        }
+
+        .mini-bar-fill {
+          height: 100%;
+
+          border-radius: 999px;
+        }
+
+        .mini-red {
+          background: #d85b5b;
+        }
+
+        .mini-yellow {
+          background: #d7a633;
+        }
+
+        .mini-gray {
+          background: #8d9aad;
+        }
+
+        .funnel {
+          margin-top: 30px;
+
+          display: grid;
+          grid-template-columns:
+            repeat(4,1fr);
+
+          gap: 8px;
+        }
+
+        .funnel > div {
+          padding: 18px 10px;
+
+          border-radius: 18px;
+
+          background: var(--surface-soft);
+
+          text-align: center;
+        }
+
+        .funnel strong {
+          display: block;
+
+          font-size: 27px;
+        }
+
+        .funnel span {
+          display: block;
+
+          margin-top: 5px;
+
+          color: var(--muted);
+
+          font-size: 10px;
+        }
+
+        .main-panel {
+          padding: 34px;
+
+          border-radius: 30px;
+        }
+
+        .panel-header {
+          margin-bottom: 28px;
+
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+
+          gap: 30px;
+        }
+
+        .panel-header h2 {
+          margin: 8px 0 0;
+
+          font-size: 30px;
+        }
+
+        .panel-header p {
+          margin: 8px 0 0;
+
+          color: var(--text-secondary);
+        }
+
+        .primary-button {
+          padding: 13px 18px;
+
+          border: 0;
+          border-radius: 14px;
+
+          background: #29488f;
+          color: white;
+
+          font-weight: 750;
+        }
+
+        .table-header,
+        .user-row {
+          display: grid;
+
+          grid-template-columns:
+            1.25fr
+            1.6fr
+            .55fr
+            .65fr
+            .85fr;
+
+          align-items: center;
+
+          gap: 20px;
+        }
+
+        .table-header {
+          padding: 13px 14px;
+
+          color: var(--muted);
+
+          font-size: 11px;
+          font-weight: 750;
+          text-transform: uppercase;
+        }
+
+        .user-row {
+          width: 100%;
+
+          padding: 19px 14px;
+
+          border: 0;
+          border-top:
+            1px solid var(--border);
+
+          background: transparent;
+
+          color: var(--text);
+
+          text-align: left;
+        }
+
+        .user-row:hover {
+          background: var(--surface-hover);
+        }
+
+        .company-info {
+          display: flex;
+          align-items: center;
+
+          gap: 13px;
+        }
+
+        .company-avatar {
+          width: 42px;
+          height: 42px;
+
+          flex: 0 0 42px;
+
+          border-radius: 13px;
+
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          background:
+            linear-gradient(
+              145deg,
+              #29488f,
+              #182e64
+            );
+
+          color: white;
+
+          font-weight: 800;
+        }
+
+        .company-avatar.large {
+          width: 50px;
+          height: 50px;
+        }
+
+        .company-avatar.profile {
+          width: 70px;
+          height: 70px;
+
+          border-radius: 21px;
+
+          font-size: 25px;
+        }
+
+        .company-info strong,
+        .company-info span {
+          display: block;
+        }
+
+        .company-info span {
+          margin-top: 4px;
+
+          color: var(--muted);
+
+          font-size: 12px;
+        }
+
+        .behavior-text {
+          color: var(--text-secondary);
+
+          font-size: 14px;
+          font-weight: 550;
+        }
+
+        .score-cell strong {
+          font-size: 18px;
+        }
+
+        .score-cell span {
+          color: var(--muted);
+
+          font-size: 11px;
+        }
+
+        .priority,
+        .automation-badge {
+          display: inline-flex;
+
+          padding: 7px 11px;
+
+          border-radius: 999px;
+
+          font-size: 11px;
+          font-weight: 800;
+
+          white-space: nowrap;
+        }
+
+        .priority-Alta {
+          background: #ffeaea;
+          color: #b53636;
+        }
+
+        .priority-Média {
+          background: #fff1bf;
+          color: #8e6200;
+        }
+
+        .priority-Baixa {
+          background: #e9eef4;
+          color: #536174;
+        }
+
+        .app[data-theme="dark"] .priority-Alta {
+          background: rgba(220,70,70,.18);
+          color: #ffabab;
+        }
+
+        .app[data-theme="dark"] .priority-Média {
+          background: rgba(210,157,31,.18);
+          color: #ffd375;
+        }
+
+        .app[data-theme="dark"] .priority-Baixa {
+          background: rgba(150,165,190,.15);
+          color: #ccd4df;
+        }
+
+        .automation-active {
+          background: rgba(226,157,37,.15);
+          color: #a76c00;
+        }
+
+        .automation-progress {
+          background: rgba(70,108,207,.14);
+          color: var(--blue);
+        }
+
+        .automation-success {
+          background: rgba(113,191,68,.16);
+          color: var(--green-dark);
+        }
+
+        .automation-off {
+          background: var(--surface-soft);
+          color: var(--muted);
+        }
+
+        .engine-banner {
+          margin-top: 24px;
+
+          padding: 31px;
+
+          border-radius: 28px;
+
+          background:
+            radial-gradient(
+              circle at 90% 0%,
+              rgba(113,191,68,.22),
+              transparent 35%
+            ),
+            #29488f;
+
+          color: white;
+
+          display: grid;
+
+          grid-template-columns:
+            auto
+            1fr
+            auto;
+
+          align-items: center;
+
+          gap: 20px;
+        }
+
+        .engine-icon {
+          width: 54px;
+          height: 54px;
+
+          border-radius: 17px;
+
+          background: rgba(255,255,255,.12);
+
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          font-size: 25px;
+        }
+
+        .engine-banner > div:nth-child(2) > span {
+          color: #c5eca9;
+
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: .14em;
+        }
+
+        .engine-banner h3 {
+          margin: 6px 0;
+
+          color: white;
+
+          font-size: 24px;
+        }
+
+        .engine-banner p {
+          margin: 0;
+
+          color: rgba(255,255,255,.82);
+        }
+
+        .engine-banner button {
+          padding: 12px 16px;
+
+          border: 0;
+          border-radius: 13px;
+
+          background: white;
+          color: #29488f;
+
+          font-weight: 800;
+        }
+
+        .back-button {
+          padding: 0;
+
+          margin-bottom: 38px;
+
+          border: 0;
+          background: none;
+
+          color: var(--blue);
+
+          font-weight: 750;
+        }
+
+        .page-heading {
+          margin-bottom: 34px;
+
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+
+          gap: 30px;
+        }
+
+        .page-heading h1 {
+          margin: 7px 0 0;
+
+          font-size:
+            clamp(38px,5vw,60px);
+
+          letter-spacing: -.05em;
+        }
+
+        .page-heading p {
+          color: var(--text-secondary);
+
+          line-height: 1.6;
+        }
+
+        .result-count {
+          text-align: right;
+        }
+
+        .result-count strong {
+          display: block;
+
+          font-size: 31px;
+        }
+
+        .result-count span {
+          color: var(--muted);
+
+          font-size: 12px;
+        }
+
+        .filters {
+          margin-bottom: 24px;
+
+          display: grid;
+
+          grid-template-columns:
+            1fr
+            190px;
+
+          gap: 12px;
+        }
+
+        .filters input,
+        .filters select {
+          width: 100%;
+          height: 50px;
+
+          padding: 0 15px;
+
+          border: 1px solid var(--border);
+          border-radius: 15px;
+
+          outline: none;
+
+          background: var(--surface);
+          color: var(--text);
+        }
+
+        .filters input::placeholder {
+          color: var(--muted);
+        }
+
+        .users-grid {
+          display: grid;
+
+          grid-template-columns:
+            repeat(3,minmax(0,1fr));
+
+          gap: 16px;
+        }
+
+        .user-card {
+          padding: 24px;
+
+          border-radius: 26px;
+        }
+
+        .user-card-top {
+          margin-bottom: 20px;
+
+          display: flex;
+          justify-content: space-between;
+        }
+
+        .user-card h3 {
+          margin: 0;
+
+          font-size: 22px;
+        }
+
+        .user-type-label {
+          color: var(--muted);
+
+          font-size: 12px;
+        }
+
+        .user-card-behavior {
+          min-height: 42px;
+
+          margin: 23px 0;
+
+          color: var(--text-secondary);
+
+          font-weight: 550;
+        }
+
+        .user-card-stats {
+          padding: 16px 0;
+
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+
+          display: grid;
+
+          grid-template-columns:
+            1fr
+            1fr;
+        }
+
+        .user-card-stats span,
+        .user-card-automation > span {
+          display: block;
+
+          color: var(--muted);
+
+          font-size: 11px;
+        }
+
+        .user-card-stats strong {
+          display: block;
+
+          margin-top: 4px;
+
+          font-size: 20px;
+        }
+
+        .user-card-automation {
+          min-height: 54px;
+
+          padding-top: 16px;
+
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+
+          gap: 12px;
+        }
+
+        .card-button {
+          width: 100%;
+
+          padding: 18px 0 0;
+
+          border: 0;
+          background: none;
+
+          color: var(--blue);
+
+          font-weight: 750;
+
+          text-align: left;
+        }
+
+        .automation-summary-grid {
+          margin-bottom: 24px;
+
+          display: grid;
+
+          grid-template-columns:
+            repeat(4,1fr);
+
+          gap: 12px;
+        }
+
+        .automation-summary-grid > div {
+          padding: 21px;
+
+          border-radius: 21px;
+        }
+
+        .automation-summary-grid span {
+          display: block;
+
+          color: var(--muted);
+
+          font-size: 11px;
+        }
+
+        .automation-summary-grid strong {
+          display: block;
+
+          margin-top: 7px;
+
+          font-size: 30px;
+        }
+
+        .automation-list {
+          display: flex;
+          flex-direction: column;
+
+          gap: 12px;
+        }
+
+        .automation-list-card {
+          padding: 20px;
+
+          border-radius: 23px;
+
+          display: grid;
+
+          grid-template-columns:
+            1.3fr
+            .45fr
+            .75fr
+            .9fr
+            auto;
+
+          align-items: center;
+
+          gap: 20px;
+        }
+
+        .automation-list-main {
+          display: flex;
+          align-items: center;
+
+          gap: 13px;
+        }
+
+        .automation-list-main strong,
+        .automation-list-main span {
+          display: block;
+        }
+
+        .automation-list-main span {
+          margin-top: 4px;
+
+          color: var(--text-secondary);
+
+          font-size: 12px;
+        }
+
+        .automation-list-info > span {
+          display: block;
+
+          margin-bottom: 6px;
+
+          color: var(--muted);
+
+          font-size: 10px;
+        }
+
+        .automation-list-info > strong {
+          font-size: 13px;
+        }
+
+        .details-button {
+          border: 0;
+          background: none;
+
+          color: var(--blue);
+
+          font-weight: 750;
+        }
+
+        .no-results {
+          padding: 50px;
+
+          text-align: center;
+
+          color: var(--muted);
+        }
+
+        .profile-header {
+          padding: 31px;
+
+          margin-bottom: 18px;
+
+          border-radius: 29px;
+
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+
+          gap: 30px;
+        }
+
+        .profile-main {
+          display: flex;
+          align-items: center;
+
+          gap: 20px;
+        }
+
+        .profile-main h1 {
+          margin: 5px 0;
+
+          font-size:
+            clamp(31px,4vw,47px);
+
+          letter-spacing: -.05em;
+        }
+
+        .profile-meta {
+          display: flex;
+          flex-wrap: wrap;
+
+          gap: 7px;
+
+          color: var(--text-secondary);
+
+          font-size: 13px;
+        }
+
+        .profile-priority {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+
+          gap: 8px;
+        }
+
+        .profile-priority > span {
+          color: var(--muted);
+
+          font-size: 11px;
+        }
+
+        .detail-stats {
+          margin-bottom: 18px;
+
+          display: grid;
+
+          grid-template-columns:
+            1.4fr
+            repeat(4,1fr);
+
+          gap: 12px;
+        }
+
+        .detail-stats > div {
+          padding: 21px;
+
+          border-radius: 21px;
+
+          background: var(--surface);
+
+          border: 1px solid var(--border);
+        }
+
+        .detail-stats span {
+          display: block;
+
+          color: var(--muted);
+
+          font-size: 11px;
+        }
+
+        .detail-stats strong {
+          display: inline-block;
+
+          margin-top: 7px;
+
+          font-size: 31px;
+        }
+
+        .detail-stats small {
+          color: var(--muted);
+        }
+
+        .details-layout {
+          display: grid;
+
+          grid-template-columns:
+            1.2fr
+            1fr;
+
+          gap: 18px;
+
+          align-items: start;
+        }
+
+        .details-column {
+          display: flex;
+          flex-direction: column;
+
+          gap: 18px;
+        }
+
+        .detail-panel {
+          padding: 29px;
+
+          border-radius: 27px;
+        }
+
+        .detail-panel h2 {
+          margin: 8px 0 0;
+
+          font-size: 25px;
+        }
+
+        .detail-panel p {
+          color: var(--text-secondary);
+
+          line-height: 1.55;
+        }
+
+        .behavior-panel {
+          background:
+            linear-gradient(
+              145deg,
+              rgba(113,191,68,.13),
+              var(--surface)
+            );
+        }
+
+        .timeline {
+          margin-top: 29px;
+        }
+
+        .timeline-item {
+          min-height: 67px;
+
+          display: grid;
+
+          grid-template-columns:
+            23px
+            58px
+            1fr;
+
+          gap: 13px;
+        }
+
+        .timeline-marker {
+          position: relative;
+
+          display: flex;
+          justify-content: center;
+        }
+
+        .timeline-marker::after {
+          content: "";
+
+          width: 2px;
+
+          position: absolute;
+
+          top: 16px;
+          bottom: -4px;
+
+          background: var(--border);
+        }
+
+        .timeline-item:last-child
+        .timeline-marker::after {
+          display: none;
+        }
+
+        .timeline-marker span {
+          z-index: 2;
+
+          width: 11px;
+          height: 11px;
+
+          margin-top: 4px;
+
+          border-radius: 50%;
+
+          background: var(--green);
+
+          box-shadow:
+            0 0 0 4px
+            rgba(113,191,68,.14);
+        }
+
+        .timeline-after
+        .timeline-marker span {
+          background: var(--blue);
+        }
+
+        .timeline-time {
+          color: var(--muted);
+
+          font-size: 12px;
+        }
+
+        .timeline-content strong,
+        .timeline-content span,
+        .timeline-content small {
+          display: block;
+        }
+
+        .timeline-content span {
+          margin-top: 4px;
+
+          color: var(--text-secondary);
+
+          font-size: 12px;
+        }
+
+        .timeline-content small {
+          margin-top: 5px;
+
+          color: var(--blue);
+
+          font-size: 10px;
+          font-weight: 750;
+        }
+
+        .reason-list {
+          margin-top: 23px;
+
+          display: flex;
+          flex-direction: column;
+
+          gap: 11px;
+        }
+
+        .reason {
+          display: flex;
+          align-items: center;
+
+          gap: 11px;
+
+          color: var(--text-secondary);
+
+          font-size: 14px;
+          font-weight: 550;
+        }
+
+        .reason span {
+          width: 25px;
+          height: 25px;
+
+          flex: 0 0 25px;
+
+          border-radius: 50%;
+
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          background: rgba(113,191,68,.15);
+          color: var(--green-dark);
+
+          font-weight: 800;
+        }
+
+        .automation-card {
+          padding: 29px;
+
+          border-radius: 27px;
+
+          background: var(--surface-soft);
+
+          border: 1px solid var(--border);
+        }
+
+        .automation-card.active {
+          background:
+            radial-gradient(
+              circle at 90% 0%,
+              rgba(113,191,68,.25),
+              transparent 38%
+            ),
+            #29488f;
+
+          color: white;
+
+          border: 0;
+        }
+
+        .automation-card > span {
+          color: var(--green);
+
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: .15em;
+        }
+
+        .automation-card.active > span {
+          color: #c5eca9;
+        }
+
+        .automation-card h2 {
+          margin: 9px 0 10px;
+        }
+
+        .automation-card.active h2 {
+          color: white;
+        }
+
+        .automation-card p {
+          color: var(--text-secondary);
+
+          line-height: 1.55;
+        }
+
+        .automation-card.active p {
+          color: rgba(255,255,255,.82);
+        }
+
+        .automation-status-line {
+          margin-top: 20px;
+
+          padding: 15px;
+
+          border-radius: 16px;
+
+          background: rgba(255,255,255,.10);
+        }
+
+        .automation-status-line span,
+        .automation-status-line strong {
+          display: block;
+        }
+
+        .automation-status-line span {
+          color: rgba(255,255,255,.65);
+
+          font-size: 11px;
+        }
+
+        .automation-status-line strong {
+          margin-top: 4px;
+
+          color: white;
+        }
+
+        .automation-card button {
+          margin-top: 18px;
+
+          padding: 12px 16px;
+
+          border: 0;
+          border-radius: 13px;
+
+          background: white;
+          color: #29488f;
+
+          font-weight: 800;
+        }
+
+        .automation-hero {
+          max-width: 820px;
+
+          margin: 0 auto 40px;
+
+          text-align: center;
+        }
+
+        .automation-orb {
+          width: 66px;
+          height: 66px;
+
+          margin: 0 auto 20px;
+
+          border-radius: 22px;
+
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          background:
+            linear-gradient(
+              145deg,
+              #29488f,
+              #71bf44
+            );
+
+          color: white;
+
+          font-size: 29px;
+        }
+
+        .automation-hero h1 {
+          margin: 8px 0;
+
+          font-size:
+            clamp(42px,5vw,64px);
+
+          letter-spacing: -.05em;
+        }
+
+        .automation-hero p {
+          color: var(--text-secondary);
+
+          font-size: 17px;
+          line-height: 1.6;
+        }
+
+        .automation-layout {
+          display: grid;
+
+          grid-template-columns:
+            1.5fr
+            .7fr;
+
+          gap: 18px;
+
+          align-items: start;
+        }
+
+        .automation-main-card,
+        .automation-side-card {
+          padding: 30px;
+
+          border-radius: 29px;
+        }
+
+        .automation-card-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+
+          gap: 20px;
+        }
+
+        .automation-card-header span {
+          color: var(--muted);
+
+          font-size: 11px;
+        }
+
+        .automation-card-header h2 {
+          margin: 5px 0 0;
+
+          font-size: 31px;
+        }
+
+        .automation-details {
+          margin-top: 27px;
+
+          display: grid;
+
+          grid-template-columns:
+            repeat(3,1fr);
+
+          gap: 12px;
+        }
+
+        .automation-details > div {
+          padding: 17px;
+
+          border-radius: 18px;
+
+          background: var(--surface-soft);
+
+          border: 1px solid var(--border);
+        }
+
+        .automation-details span,
+        .automation-details strong {
+          display: block;
+        }
+
+        .automation-details span {
+          color: var(--muted);
+
+          font-size: 11px;
+        }
+
+        .automation-details strong {
+          margin-top: 6px;
+
+          font-size: 13px;
+
+          line-height: 1.45;
+        }
+
+        .automation-divider {
+          height: 1px;
+
+          margin: 30px 0;
+
+          background: var(--border);
+        }
+
+        .flow {
+          margin-top: 25px;
+
+          display: flex;
+          flex-direction: column;
+        }
+
+        .flow-step {
+          min-height: 78px;
+
+          position: relative;
+
+          display: grid;
+
+          grid-template-columns:
+            38px
+            1fr;
+
+          gap: 15px;
+        }
+
+        .flow-step::after {
+          content: "";
+
+          position: absolute;
+
+          left: 18px;
+          top: 34px;
+          bottom: -5px;
+
+          width: 2px;
+
+          background: var(--border);
+        }
+
+        .flow-step:last-child::after {
+          display: none;
+        }
+
+        .flow-icon {
+          width: 36px;
+          height: 36px;
+
+          z-index: 2;
+
+          border-radius: 50%;
+
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          font-weight: 800;
+        }
+
+        .flow-done .flow-icon {
+          background: rgba(113,191,68,.17);
+          color: var(--green-dark);
+        }
+
+        .flow-active .flow-icon {
+          background: rgba(41,72,143,.13);
+          color: var(--blue);
+        }
+
+        .flow-pending .flow-icon {
+          background: var(--surface-soft);
+          color: var(--muted);
+        }
+
+        .flow-step strong,
+        .flow-step span {
+          display: block;
+        }
+
+        .flow-step span {
+          margin-top: 5px;
+
+          color: var(--text-secondary);
+
+          font-size: 12px;
+        }
+
+        .automation-side-card {
+          position: sticky;
+
+          top: 105px;
+        }
+
+        .automation-side-card h2 {
+          margin: 8px 0 25px;
+
+          font-size: 27px;
+        }
+
+        .result-checks {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .result-checks > div {
+          padding: 16px 0;
+
+          border-bottom:
+            1px solid var(--border);
+
+          display: flex;
+          justify-content: space-between;
+
+          gap: 15px;
+        }
+
+        .result-checks span {
+          color: var(--text-secondary);
+
+          font-size: 12px;
+        }
+
+        .simulation-button {
+          width: 100%;
+
+          margin-top: 25px;
+
+          padding: 14px 16px;
+
+          border: 0;
+          border-radius: 14px;
+
+          background: #29488f;
+          color: white;
+
+          font-weight: 800;
+        }
+
+        .secondary-button {
+          padding: 13px 18px;
+
+          border: 1px solid var(--border);
+          border-radius: 14px;
+
+          background: var(--surface);
+          color: var(--blue);
+
+          font-weight: 750;
+        }
+
+        .secondary-button.full {
+          width: 100%;
+
+          margin-top: 25px;
+        }
+
+        .simulation-note {
+          margin: 16px 0 0;
+
+          color: var(--muted);
+
+          font-size: 11px;
+          line-height: 1.5;
+        }
+
+        .empty-state {
+          padding: 80px 20px;
+
+          text-align: center;
+        }
+
+        .empty-state p {
+          color: var(--text-secondary);
+        }
+
+        .empty-state button {
+          padding: 13px 18px;
+
+          border: 0;
+          border-radius: 14px;
+
+          background: #29488f;
+          color: white;
+        }
+
+        @media (max-width: 1050px) {
+          .topbar-content {
+            grid-template-columns:
+              auto
+              1fr
+              auto;
+          }
+
+          .stats-grid,
+          .automation-summary-grid {
+            grid-template-columns:
+              repeat(2,1fr);
+          }
+
+          .charts-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .table-header {
+            display: none;
+          }
+
+          .user-row {
+            grid-template-columns:
+              1.3fr
+              1.4fr
+              .5fr
+              .7fr;
+          }
+
+          .user-row > div:last-child {
+            grid-column: 1 / -1;
+          }
+
+          .users-grid {
+            grid-template-columns:
+              repeat(2,1fr);
+          }
+
+          .automation-list-card {
+            grid-template-columns:
+              1fr
+              .4fr
+              .8fr
+              1fr;
+
+            gap: 14px;
+          }
+
+          .automation-list-card .details-button {
+            grid-column: 1 / -1;
+
+            text-align: left;
+          }
+
+          .detail-stats {
+            grid-template-columns:
+              repeat(3,1fr);
+          }
+
+          .automation-layout {
+            grid-template-columns: 1fr;
+          }
+
+          .automation-side-card {
+            position: static;
+          }
+        }
+
+        @media (max-width: 760px) {
+          .topbar-content,
+          main {
+            width: calc(100% - 28px);
+          }
+
+          .topbar-content {
+            grid-template-columns:
+              1fr
+              auto;
+          }
+
+          .main-nav {
+            grid-column: 1 / -1;
+            grid-row: 2;
+
+            width: 100%;
+
+            padding-bottom: 10px;
+
+            justify-content: flex-start;
+
+            overflow-x: auto;
+          }
+
+          .topbar {
+            min-height: auto;
+          }
+
+          .topbar-content {
+            padding-top: 12px;
+          }
+
+          main {
+            padding-top: 45px;
+          }
+
+          .mvp-badge {
+            display: none;
+          }
+
+          .theme-label {
+            display: none;
+          }
+
+          .theme-toggle {
+            width: 40px;
+            height: 40px;
+
+            padding: 0;
+
+            justify-content: center;
+          }
+
+          .hero h1 {
+            font-size:
+              clamp(42px,12vw,62px);
+          }
+
+          .hero p {
+            font-size: 16px;
+          }
+
+          .stats-grid,
+          .automation-summary-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .results-strip {
+            grid-template-columns:
+              repeat(2,1fr);
+          }
+
+          .results-strip > div:nth-child(2) {
+            border-right: 0;
+          }
+
+          .results-strip > div:nth-child(-n+2) {
+            border-bottom:
+              1px solid var(--border);
+          }
+
+          .funnel {
+            grid-template-columns:
+              repeat(2,1fr);
+          }
+
+          .panel-header,
+          .page-heading,
+          .profile-header {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .primary-button {
+            width: 100%;
+          }
+
+          .user-row {
+            grid-template-columns: 1fr;
+
+            gap: 11px;
+          }
+
+          .engine-banner {
+            grid-template-columns:
+              auto
+              1fr;
+          }
+
+          .engine-banner button {
+            grid-column: 1 / -1;
+          }
+
+          .filters,
+          .users-grid,
+          .details-layout {
+            grid-template-columns: 1fr;
+          }
+
+          .automation-list-card {
+            grid-template-columns: 1fr;
+
+            gap: 15px;
+          }
+
+          .profile-priority {
+            align-items: flex-start;
+          }
+
+          .detail-stats {
+            grid-template-columns:
+              repeat(2,1fr);
+          }
+
+          .automation-details {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 430px) {
+          .topbar-content,
+          main {
+            width: calc(100% - 20px);
+          }
+
+          .main-panel,
+          .chart-card,
+          .detail-panel,
+          .profile-header,
+          .automation-main-card,
+          .automation-side-card {
+            padding: 19px;
+          }
+
+          .results-strip {
+            grid-template-columns: 1fr;
+          }
+
+          .results-strip > div {
+            border-right: 0;
+            border-bottom:
+              1px solid var(--border);
+          }
+
+          .results-strip > div:last-child {
+            border-bottom: 0;
+          }
+        }
+
+        /* ── melhorias pontuais ── */
+
+        .back-button {
+          display: block;
+          text-align: left;
+          align-self: flex-start;
+        }
+
+        .page-heading {
+          align-items: flex-start;
+        }
+
+        .page-heading h1 {
+          font-size: clamp(26px, 3.5vw, 40px);
+        }
+
+        .page-heading > div:first-child {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .result-count {
+          flex-shrink: 0;
+        }
+
+        .automation-hero h1 {
+          font-size: clamp(32px, 4vw, 52px);
+        }
+
+        .page-section {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .marker-abandon {
+          background: #d85b5b !important;
+          box-shadow: 0 0 0 4px rgba(216,91,91,.18) !important;
+        }
+
+        .user-card-priority-Alta {
+          border-top: 3px solid #d85b5b;
+        }
+
+        .user-card-priority-Média {
+          border-top: 3px solid #d7a633;
+        }
+
+        .user-card-priority-Baixa {
+          border-top: 3px solid #8d9aad;
+        }
+
+        .automation-details > div:last-child {
+          grid-column: 1 / -1;
+        }
+      `}</style>
+
+      <Header
+        goHome={goHome}
+        goUsers={goUsers}
+        goAutomations={goAutomations}
+        page={route.page}
+        theme={theme}
+        toggleTheme={toggleTheme}
+      />
+
+      <main>
+        {route.page === "dashboard" && (
+          <Dashboard
+            users={analyzedUsers}
+            onSeeAll={goUsers}
+            onSelectUser={openUser}
+            openAutomations={goAutomations}
+          />
+        )}
+
+        {route.page === "users" && (
+          <UsersPage
+            users={analyzedUsers}
+            onBack={goBack}
+            onSelectUser={openUser}
+          />
+        )}
+
+        {route.page === "automations" && (
+          <AutomationsPage
+            users={analyzedUsers}
+            onBack={goBack}
+            openAutomation={openAutomation}
+          />
+        )}
+
+        {route.page === "details" && (
+          <UserDetails
+            user={selectedUser}
+            onBack={goBack}
+            openAutomation={openAutomation}
+          />
+        )}
+
+        {route.page === "automation" && (
+          <AutomationPage
+            user={selectedUser}
+            onBack={goBack}
+            simulate={simulateFollowUp}
+            reset={resetFollowUp}
+          />
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default App;
