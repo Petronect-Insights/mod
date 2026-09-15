@@ -316,12 +316,16 @@ function applyReengagementEngine(user) {
     channelLevel = "Média";
   }
 
+  const hasFieldError = !!(abandonEvent && (
+    abandonEvent.detail.toLowerCase().includes("erro") ||
+    abandonEvent.detail.toLowerCase().includes("campo")
+  ));
   const steps = [
-    { delay: "T+0h",  label: "Notificação no Portal Petronect",                        done: true },
-    { delay: "T+4h",  label: "E-mail com link direto para retomar a proposta",          done: true },
-    { delay: "T+16h", label: "Mensagem via Sala de Colaboração do edital",              done: user.score >= 50 },
-    { delay: "T+24h", label: user.score >= 70 ? "WhatsApp Business com urgência" : "Segundo e-mail + guia de apoio ao usuário", done: user.score >= 70 },
-    { delay: "T+48h", label: "Ligação direta — gestor comercial Petronect",            done: !!(user.score >= 85 || user.prazoUrgente) },
+    { delay: "T+0h",  label: "Notificação no Portal Petronect",                                                                   done: true },
+    { delay: "T+4h",  label: "E-mail com link direto para retomar a proposta",                                                     done: true },
+    { delay: "T+16h", label: hasFieldError ? "Sala de Colaboração — apoio técnico no preenchimento da proposta" : "Mensagem via Sala de Colaboração do edital", done: user.score >= 50 },
+    { delay: "T+24h", label: user.score >= 70 ? "WhatsApp Business com urgência" : "Segundo e-mail + guia de apoio ao usuário",    done: user.score >= 70 },
+    { delay: "T+48h", label: "Ligação direta — gestor comercial Petronect",                                                        done: !!(user.score >= 85 || user.prazoUrgente) },
   ];
 
   return {
@@ -1222,6 +1226,57 @@ function ScoreRing({ score }) {
 }
 
 /* =========================================================
+   STEPPER DE JORNADA (Necessidade → Análise → Proposta → Desfecho)
+========================================================= */
+
+function JourneySteps({ user }) {
+  const types = user.events.map((e) => e.type);
+  const abandoned = user.abandoned;
+  const concluded = user.automation?.completed || types.includes("Conclusão");
+  const atProposta = types.includes("Início de jornada") || types.includes("Abandono");
+  const atAnalise = types.includes("Visualização") || types.includes("Busca") || types.includes("Download");
+
+  let currentStep = 1;
+  if (concluded) currentStep = 4;
+  else if (atProposta) currentStep = 3;
+  else if (atAnalise) currentStep = 2;
+
+  const stepsData = [
+    { num: 1, label: "Necessidade", role: "Contratante" },
+    { num: 2, label: "Análise",     role: "Fornecedor"  },
+    { num: 3, label: "Proposta",    role: "Fornecedor"  },
+    { num: 4, label: "Desfecho",    role: "Contratante" },
+  ];
+
+  return (
+    <div className="journey-steps">
+      {stepsData.map((step, i) => {
+        const isPast   = step.num < currentStep;
+        const isActive = step.num === currentStep;
+        const isStuck  = isActive && abandoned && !concluded;
+        const isDone   = isPast || (isActive && concluded);
+        let cls = "journey-step";
+        if (isDone)  cls += " journey-step-done";
+        if (isActive && !isStuck) cls += " journey-step-active";
+        if (isStuck) cls += " journey-step-stuck";
+        return (
+          <div key={step.num} className="journey-step-wrap">
+            <div className={cls}>
+              <div className="journey-num">{isStuck ? "!" : step.num}</div>
+              <strong className="journey-label">{step.label}</strong>
+              <span className="journey-role">{step.role}</span>
+            </div>
+            {i < stepsData.length - 1 && (
+              <div className={`journey-connector${isPast ? " journey-connector-done" : ""}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* =========================================================
    DETALHES DO USUÁRIO
 ========================================================= */
 
@@ -1263,6 +1318,8 @@ function UserDetails({
           </div>
         </div>
       </div>
+
+      <JourneySteps user={user} />
 
       <div className="detail-stats">
         <div>
@@ -1492,6 +1549,8 @@ function AutomationPage({
           a jornada em tempo real.
         </p>
       </div>
+
+      <JourneySteps user={user} />
 
       <div className="automation-layout">
         <article className="automation-main-card">
@@ -3028,6 +3087,108 @@ function App() {
           margin-top: auto !important;
           padding-top: 14px !important;
           border-top: 1px solid var(--border) !important;
+        }
+
+        /* ── Journey Stepper ── */
+        .journey-steps {
+          display: flex;
+          align-items: flex-start;
+          padding: 22px 28px;
+          margin-bottom: 28px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          box-shadow: var(--shadow);
+        }
+
+        .journey-step-wrap {
+          display: flex;
+          align-items: center;
+          flex: 1;
+        }
+
+        .journey-step {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          gap: 6px;
+          min-width: 72px;
+        }
+
+        .journey-num {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+          font-size: 13px;
+          background: var(--surface-soft);
+          color: var(--muted);
+          border: 2px solid var(--border);
+          transition: background .2s, border-color .2s;
+        }
+
+        .journey-label {
+          font-size: 12px;
+          font-weight: 700;
+          color: var(--muted);
+        }
+
+        .journey-role {
+          font-size: 10px;
+          color: var(--muted);
+          opacity: .75;
+        }
+
+        .journey-connector {
+          flex: 1;
+          height: 2px;
+          background: var(--border);
+          margin: 0 4px;
+          margin-bottom: 42px;
+        }
+
+        .journey-connector-done {
+          background: var(--blue);
+        }
+
+        .journey-step-done .journey-num {
+          background: var(--blue);
+          border-color: var(--blue);
+          color: white;
+        }
+
+        .journey-step-done .journey-label {
+          color: var(--blue);
+        }
+
+        .journey-step-active .journey-num {
+          background: var(--blue);
+          border-color: var(--blue);
+          color: white;
+          box-shadow: 0 0 0 5px rgba(41,72,143,.15);
+        }
+
+        .journey-step-active .journey-label {
+          color: var(--blue);
+        }
+
+        .journey-step-stuck .journey-num {
+          background: #d85b5b;
+          border-color: #d85b5b;
+          color: white;
+          box-shadow: 0 0 0 5px rgba(216,91,91,.18);
+        }
+
+        .journey-step-stuck .journey-label {
+          color: #d85b5b;
+        }
+
+        .journey-step-stuck .journey-role {
+          color: #d85b5b;
         }
 
         .automation-summary-grid {
