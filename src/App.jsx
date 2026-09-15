@@ -1294,7 +1294,7 @@ function UserDetails({
                       <small className="after-tag">reengajamento</small>
                     )}
                   </div>
-                  <span>{event.detail}</span>
+                  <span className="timeline-detail">{event.detail}</span>
                 </div>
               </div>
             ))}
@@ -2530,6 +2530,8 @@ function App() {
 
           font-size: 14px;
           font-weight: 550;
+
+          text-align: left;
         }
 
         .score-cell {
@@ -3281,25 +3283,18 @@ function App() {
           flex-shrink: 0;
         }
 
-        .timeline-content strong,
-        .timeline-content span,
+        .timeline-detail {
+          display: block;
+          margin-top: 3px;
+          color: var(--text-secondary);
+          font-size: 12px;
+          text-align: left;
+        }
+
         .timeline-content small {
           display: block;
-        }
-
-        .timeline-content span {
-          margin-top: 4px;
-
-          color: var(--text-secondary);
-
-          font-size: 12px;
-        }
-
-        .timeline-content small {
           margin-top: 5px;
-
           color: var(--blue);
-
           font-size: 10px;
           font-weight: 750;
         }
@@ -3810,7 +3805,7 @@ function App() {
 
           .detail-stats {
             grid-template-columns:
-              repeat(3,1fr);
+              repeat(2,1fr);
           }
 
           .automation-layout {
