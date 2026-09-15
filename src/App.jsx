@@ -372,6 +372,10 @@ function getRoute() {
     return { page: "automations", userId: null };
   }
 
+  if (hash === "#/atencao") {
+    return { page: "atencao", userId: null };
+  }
+
   if (hash.startsWith("#/automation/")) {
     return {
       page: "automation",
@@ -464,6 +468,7 @@ function Header({
   goHome,
   goUsers,
   goAutomations,
+  goAtencao,
   page,
   theme,
   toggleTheme,
@@ -495,6 +500,14 @@ function Header({
             onClick={goUsers}
           >
             Usuários
+          </button>
+
+          <button
+            className={page === "atencao" ? "nav-active nav-atencao-active" : "nav-atencao"}
+            onClick={goAtencao}
+          >
+            <span className="nav-atencao-dot" />
+            Em Atenção
           </button>
 
           <button
@@ -612,6 +625,224 @@ function DonutChart({ segments }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   ABA "EM ATENÇÃO"
+========================================================= */
+
+function getSinais(user) {
+  const sinais = [];
+  if (user.abandoned) sinais.push({ label: "Abandono de jornada", color: "#d85b5b" });
+  if (user.events.filter(e => e.type === "Abandono" || e.type === "Início de jornada").length > 1)
+    sinais.push({ label: "Múltiplas tentativas", color: "#d7a633" });
+  if (user.automation?.hasFieldError) sinais.push({ label: "Erro no preenchimento", color: "#d85b5b" });
+  if (user.prazoUrgente) sinais.push({ label: "Prazo se esgota em breve", color: "#d85b5b" });
+  if (user.interactions >= 5 && !user.abandoned)
+    sinais.push({ label: "Alta frequência sem conclusão", color: "#d7a633" });
+  if (!user.abandoned && user.interactions < 3)
+    sinais.push({ label: "Baixa interação", color: "#8d9aad" });
+  if (sinais.length === 0) sinais.push({ label: "Monitoramento padrão", color: "#8d9aad" });
+  return sinais.slice(0, 3);
+}
+
+function getAcao(user) {
+  if (user.priority === "Alta")  return { label: "Entrar em contato", cls: "atencao-btn-alta" };
+  if (user.priority === "Média") return { label: "Enviar orientação",  cls: "atencao-btn-media" };
+  return                                { label: "Monitorar",          cls: "atencao-btn-baixa" };
+}
+
+function AtencaoPage({ users, onSelectUser }) {
+  const [filter, setFilter] = useState("Todos");
+  const [search, setSearch] = useState("");
+
+  const emAtencao = users.filter(u => u.signal !== "Monitoramento" || u.abandoned);
+  const altaPrioridade = users.filter(u => u.priority === "Alta");
+
+  const filtered = emAtencao.filter(u => {
+    const matchFilter = filter === "Todos" || u.priority === filter;
+    const matchSearch = u.name.toLowerCase().includes(search.toLowerCase());
+    return matchFilter && matchSearch;
+  });
+
+  const pct = (n) => Math.round((n / users.length) * 100);
+
+  return (
+    <div className="atencao-page">
+      {/* ── Header ── */}
+      <div className="atencao-header">
+        <div>
+          <h1 className="atencao-title">Usuários em atenção</h1>
+          <p className="atencao-subtitle">Identifique quem precisa de ação e entenda os motivos.</p>
+        </div>
+        <span className="atencao-period">Últimos 30 dias</span>
+      </div>
+
+      {/* ── Stats ── */}
+      <div className="atencao-stats">
+        <div className="atencao-stat">
+          <strong>{users.length}</strong>
+          <span>Usuários analisados</span>
+        </div>
+        <div className="atencao-stat atencao-stat-mid">
+          <strong>{emAtencao.length} <em>{pct(emAtencao.length)}%</em></strong>
+          <span>Em atenção</span>
+        </div>
+        <div className="atencao-stat">
+          <strong>{altaPrioridade.length} <em>{pct(altaPrioridade.length)}%</em></strong>
+          <span>Alta prioridade</span>
+        </div>
+      </div>
+
+      {/* ── Filtros ── */}
+      <div className="atencao-filters">
+        <div className="search-wrap" style={{maxWidth: 260}}>
+          <span className="search-icon">⌕</span>
+          <input
+            placeholder="Buscar fornecedor..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="atencao-pills">
+          {["Todos", "Alta", "Média", "Baixa"].map(p => (
+            <button
+              key={p}
+              className={`priority-pill${filter === p ? " pill-active" : ""} priority-pill-${p}`}
+              onClick={() => setFilter(p)}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Tabela ── */}
+      <div className="atencao-table-wrap">
+        <div className="atencao-table-head">
+          <span>Usuário</span>
+          <span>Nível de atenção</span>
+          <span>Principais sinais</span>
+          <span>Última atividade</span>
+          <span>Ação sugerida</span>
+        </div>
+
+        {filtered.map(user => {
+          const sinais = getSinais(user);
+          const acao = getAcao(user);
+          const lastEvent = user.events[user.events.length - 1];
+          return (
+            <div
+              key={user.id}
+              className="atencao-row"
+              onClick={() => onSelectUser(user)}
+            >
+              <div className="atencao-cell-user">
+                <div className={`company-avatar avatar-priority-${user.priority}`} style={{width:36,height:36,fontSize:14}}>
+                  {user.name[0].toUpperCase()}
+                </div>
+                <div>
+                  <strong>{user.name}</strong>
+                  <span>{user.type}</span>
+                </div>
+              </div>
+
+              <div>
+                <PriorityBadge priority={user.priority} />
+              </div>
+
+              <div className="atencao-sinais">
+                {sinais.map((s, i) => (
+                  <div key={i} className="atencao-sinal">
+                    <span className="atencao-sinal-dot" style={{background: s.color}} />
+                    <span>{s.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="atencao-cell-date">
+                {lastEvent ? lastEvent.time : user.lastAccess}
+              </div>
+
+              <div onClick={e => e.stopPropagation()}>
+                <button
+                  className={`atencao-btn ${acao.cls}`}
+                  onClick={() => onSelectUser(user)}
+                >
+                  {acao.label}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+
+        {filtered.length === 0 && (
+          <div className="atencao-empty">Nenhum usuário encontrado.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   FEED DE EVENTOS (pool para simulação ao vivo)
+========================================================= */
+
+const FEED_POOL = [
+  { company: "Metalúrgica Nordeste Ltda",  type: "Login",            detail: "Acesso ao Portal Petronect",                              sys: false },
+  { company: "Tech Suprimentos Bahia",     type: "Busca",            detail: "Módulo Oportunidades, consultou editais de Tecnologia",    sys: false },
+  { company: "Construtora Vega S.A.",      type: "Visualização",     detail: "Módulo Oportunidades, visualizou edital nº 4600098712",    sys: false },
+  { company: "Distribuidora Atlântico ME", type: "Login",            detail: "Primeiro acesso do dia",                                  sys: false },
+  { company: "Engenharia Sul Ltda",        type: "Download",         detail: "Módulo Propostas, baixou especificações técnicas",         sys: false },
+  { company: "Petroforte Serviços",        type: "Busca",            detail: "Módulo Oportunidades, consultou bens e serviços industriais", sys: false },
+  { company: "Motor",                      type: "Detecção",         detail: "Abandono detectado, Metalúrgica Nordeste Ltda",            sys: true  },
+  { company: "Motor",                      type: "Automação",        detail: "Notificação disparada, Tech Suprimentos Bahia",           sys: true  },
+  { company: "Motor",                      type: "Retorno",          detail: "Novo login detectado, Metalúrgica Nordeste Ltda",          sys: true  },
+  { company: "Tech Suprimentos Bahia",     type: "Início de jornada",detail: "Módulo Propostas, iniciou envio de proposta técnica",      sys: false },
+  { company: "Construtora Vega S.A.",      type: "Conclusão",        detail: "Proposta submetida com sucesso",                          sys: false },
+  { company: "Motor",                      type: "Sala de Colaboração", detail: "Mensagem enviada, Tech Suprimentos Bahia",             sys: true  },
+];
+
+function makeFeedTime(secsAgo) {
+  if (secsAgo < 5)  return "agora";
+  if (secsAgo < 60) return `há ${secsAgo}s`;
+  return `há ${Math.floor(secsAgo / 60)}min`;
+}
+
+/* ── CountUp ── */
+function CountUp({ value }) {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    if (!value) { setDisplay(0); return; }
+    let current = 0;
+    const steps = 24;
+    const inc = value / steps;
+    const t = setInterval(() => {
+      current += inc;
+      if (current >= value) { setDisplay(value); clearInterval(t); }
+      else setDisplay(Math.floor(current));
+    }, 700 / steps);
+    return () => clearInterval(t);
+  }, [value]);
+  return <>{display}</>;
+}
+
+/* ── ToastContainer ── */
+function ToastContainer({ toasts }) {
+  if (!toasts.length) return null;
+  return (
+    <div className="toast-container">
+      {toasts.map((t) => (
+        <div key={t.id} className={`toast toast-${t.type}`}>
+          <span className="toast-dot" />
+          <div className="toast-body">
+            <strong>{t.title}</strong>
+            <span>{t.message}</span>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -1876,6 +2107,10 @@ function App() {
 
   function goAutomations() {
     window.location.hash = "#/automations";
+  }
+
+  function goAtencao() {
+    window.location.hash = "#/atencao";
   }
 
   function goBack() {
@@ -3801,7 +4036,7 @@ function App() {
           margin: 8px 0;
 
           font-size:
-            clamp(42px,5vw,64px);
+            clamp(32px,3.8vw,48px);
 
           letter-spacing: -.05em;
         }
@@ -4382,7 +4617,7 @@ function App() {
         }
 
         .automation-hero h1 {
-          font-size: clamp(32px, 4vw, 52px);
+          font-size: clamp(28px, 3.5vw, 44px);
         }
 
         .page-section {
@@ -4719,12 +4954,271 @@ function App() {
           font-size: 16px;
           line-height: 1.6;
         }
+
+        /* ── Nav: botão Em Atenção ── */
+        .nav-atencao { position: relative; }
+        .nav-atencao-dot {
+          display: inline-block;
+          width: 6px;
+          height: 6px;
+          background: #d85b5b;
+          border-radius: 50%;
+          margin-right: 5px;
+          vertical-align: middle;
+          animation: pulseDot 1.8s ease-in-out infinite;
+        }
+        @keyframes pulseDot {
+          0%,100% { opacity: 1; transform: scale(1); }
+          50%      { opacity: .55; transform: scale(.7); }
+        }
+        .nav-atencao-active .nav-atencao-dot { background: white; }
+
+        /* ── AtencaoPage ── */
+        .atencao-page {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .atencao-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
+          padding-top: 8px;
+        }
+
+        .atencao-title {
+          margin: 0 0 6px;
+          font-size: clamp(22px, 3vw, 30px);
+          letter-spacing: -.03em;
+        }
+
+        .atencao-subtitle {
+          margin: 0;
+          color: var(--text-secondary);
+          font-size: 14px;
+        }
+
+        .atencao-period {
+          padding: 8px 16px;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          background: var(--surface);
+          color: var(--text-secondary);
+          font-size: 13px;
+          font-weight: 600;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .atencao-stats {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: var(--shadow);
+        }
+
+        .atencao-stat {
+          padding: 22px 28px;
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+        }
+
+        .atencao-stat-mid {
+          border-left: 1px solid var(--border);
+          border-right: 1px solid var(--border);
+        }
+
+        .atencao-stat strong {
+          font-size: 28px;
+          font-weight: 800;
+          letter-spacing: -.04em;
+          line-height: 1;
+        }
+
+        .atencao-stat strong em {
+          font-style: normal;
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--muted);
+          margin-left: 6px;
+        }
+
+        .atencao-stat span {
+          font-size: 12px;
+          color: var(--muted);
+          text-transform: uppercase;
+          letter-spacing: .07em;
+          font-weight: 600;
+        }
+
+        .atencao-filters {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          flex-wrap: wrap;
+        }
+
+        .atencao-pills {
+          display: flex;
+          gap: 7px;
+          flex-wrap: wrap;
+        }
+
+        .atencao-table-wrap {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: var(--shadow);
+        }
+
+        .atencao-table-head {
+          display: grid;
+          grid-template-columns: 2fr 1fr 2.5fr 1fr 1.2fr;
+          gap: 12px;
+          padding: 12px 24px;
+          border-bottom: 1px solid var(--border);
+          background: var(--surface-soft);
+        }
+
+        .atencao-table-head span {
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: .07em;
+          color: var(--muted);
+        }
+
+        .atencao-row {
+          display: grid;
+          grid-template-columns: 2fr 1fr 2.5fr 1fr 1.2fr;
+          gap: 12px;
+          align-items: center;
+          padding: 14px 24px;
+          border-bottom: 1px solid var(--border);
+          cursor: pointer;
+          transition: background .15s;
+        }
+
+        .atencao-row:last-child { border-bottom: 0; }
+
+        .atencao-row:hover { background: var(--surface-hover); }
+
+        .atencao-cell-user {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          min-width: 0;
+        }
+
+        .atencao-cell-user > div {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          min-width: 0;
+        }
+
+        .atencao-cell-user strong {
+          font-size: 14px;
+          font-weight: 650;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .atencao-cell-user span {
+          font-size: 11px;
+          color: var(--muted);
+        }
+
+        .atencao-sinais {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+        }
+
+        .atencao-sinal {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+        }
+
+        .atencao-sinal-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+
+        .atencao-sinal span:last-child {
+          font-size: 12px;
+          color: var(--text-secondary);
+          font-weight: 550;
+        }
+
+        .atencao-cell-date {
+          font-size: 13px;
+          color: var(--muted);
+          white-space: nowrap;
+        }
+
+        .atencao-btn {
+          padding: 9px 16px;
+          border: none;
+          border-radius: 10px;
+          font-size: 12px;
+          font-weight: 700;
+          white-space: nowrap;
+          cursor: pointer;
+          transition: opacity .15s;
+        }
+
+        .atencao-btn:hover { opacity: .85; }
+
+        .atencao-btn-alta {
+          background: var(--blue);
+          color: white;
+        }
+
+        .atencao-btn-media {
+          background: rgba(41,72,143,.1);
+          color: var(--blue);
+        }
+
+        .atencao-btn-baixa {
+          background: var(--surface-soft);
+          color: var(--muted);
+          border: 1px solid var(--border);
+        }
+
+        .atencao-empty {
+          padding: 48px;
+          text-align: center;
+          color: var(--muted);
+          font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+          .atencao-stats { grid-template-columns: 1fr; }
+          .atencao-stat-mid { border-left: 0; border-right: 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+          .atencao-table-head { display: none; }
+          .atencao-row { grid-template-columns: 1fr; gap: 10px; }
+        }
       `}</style>
 
       <Header
         goHome={goHome}
         goUsers={goUsers}
         goAutomations={goAutomations}
+        goAtencao={goAtencao}
         page={route.page}
         theme={theme}
         toggleTheme={toggleTheme}
@@ -4737,6 +5231,13 @@ function App() {
             onSeeAll={goUsers}
             onSelectUser={openUser}
             openAutomations={goAutomations}
+          />
+        )}
+
+        {route.page === "atencao" && (
+          <AtencaoPage
+            users={analyzedUsers}
+            onSelectUser={openUser}
           />
         )}
 
