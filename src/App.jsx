@@ -372,6 +372,10 @@ function getRoute() {
     return { page: "automations", userId: null };
   }
 
+  if (hash === "#/config") {
+    return { page: "config", userId: null };
+  }
+
   if (hash.startsWith("#/automation/")) {
     return {
       page: "automation",
@@ -454,7 +458,7 @@ function StatCard({ value, label, type }) {
   return (
     <article className="stat-card">
       <div className={`stat-card-accent stat-card-accent-${type}`} />
-      <strong className="stat-value">{value}</strong>
+      <strong className="stat-value"><CountUp value={value} /></strong>
       <span className="stat-label">{label}</span>
     </article>
   );
@@ -464,7 +468,7 @@ function Header({
   goHome,
   goUsers,
   goAutomations,
-  goAtencao,
+  goConfig,
   page,
   theme,
   toggleTheme,
@@ -503,6 +507,13 @@ function Header({
             onClick={goAutomations}
           >
             Automações
+          </button>
+
+          <button
+            className={page === "config" ? "nav-active" : ""}
+            onClick={goConfig}
+          >
+            Configuração
           </button>
         </nav>
 
@@ -618,7 +629,129 @@ function DonutChart({ segments }) {
 }
 
 /* =========================================================
-   ABA "EM ATENÇÃO"
+   CONFIGURAÇÃO / INTEGRAÇÃO
+========================================================= */
+
+const CONFIG_MODULES = [
+  { name: "Módulo Oportunidades", events: ["Busca", "Visualização", "Download"], status: "ativo" },
+  { name: "Módulo Propostas",     events: ["Início de jornada", "Abandono", "Conclusão"], status: "ativo" },
+  { name: "Sala de Colaboração",  events: ["Pergunta", "Resposta", "Mensagem"], status: "ativo" },
+  { name: "Portal — Login",       events: ["Login", "Logout", "Sessão"], status: "ativo" },
+];
+
+const CONFIG_CHANNELS = [
+  { canal: "Notificação no Portal", delay: "T+0h",  nivel: "Sempre",  cor: "#29488f" },
+  { canal: "E-mail",                delay: "T+4h",  nivel: "Sempre",  cor: "#29488f" },
+  { canal: "Sala de Colaboração",   delay: "T+16h", nivel: "Score ≥ 50", cor: "#d7a633" },
+  { canal: "WhatsApp Business",     delay: "T+24h", nivel: "Score ≥ 70", cor: "#d7a633" },
+  { canal: "Ligação direta",        delay: "T+48h", nivel: "Score ≥ 85 ou prazo urgente", cor: "#d85b5b" },
+];
+
+function ConfigPage() {
+  return (
+    <div className="config-page">
+      <div className="config-header">
+        <div>
+          <span className="eyebrow">INTEGRAÇÃO</span>
+          <h1 className="config-title">Configuração do sistema</h1>
+          <p className="config-subtitle">Como o Petronect Insights se conecta ao Portal e define a cadência de reengajamento.</p>
+        </div>
+        <span className="config-status-badge">
+          <span className="live-dot" style={{background:"#71bf44"}} />
+          Sistema operacional
+        </span>
+      </div>
+
+      {/* Fluxo de integração */}
+      <div className="config-flow">
+        <div className="config-flow-node config-flow-node-portal">
+          <strong>Portal Petronect</strong>
+          <span>Fonte de eventos</span>
+        </div>
+        <div className="config-flow-arrow">
+          <span className="config-arrow-label">webhooks</span>
+          <div className="config-arrow-line" />
+        </div>
+        <div className="config-flow-node config-flow-node-engine">
+          <strong>Motor Insights</strong>
+          <span>Análise comportamental</span>
+        </div>
+        <div className="config-flow-arrow">
+          <span className="config-arrow-label">gatilhos</span>
+          <div className="config-arrow-line" />
+        </div>
+        <div className="config-flow-node config-flow-node-channels">
+          <strong>Canais de contato</strong>
+          <span>Reengajamento multi-toque</span>
+        </div>
+      </div>
+
+      <div className="config-grid">
+        {/* Módulos capturados */}
+        <div className="config-card">
+          <span className="eyebrow">CAPTURA DE EVENTOS</span>
+          <h2 className="config-card-title">Módulos monitorados</h2>
+          <div className="config-modules">
+            {CONFIG_MODULES.map((m) => (
+              <div key={m.name} className="config-module-row">
+                <div className="config-module-info">
+                  <span className="config-module-dot" />
+                  <strong>{m.name}</strong>
+                </div>
+                <div className="config-module-events">
+                  {m.events.map((e) => (
+                    <span key={e} className="config-event-tag">{e}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Cadência de canais */}
+        <div className="config-card">
+          <span className="eyebrow">CADÊNCIA DE REENGAJAMENTO</span>
+          <h2 className="config-card-title">Plano de contato multi-toque</h2>
+          <div className="config-channels">
+            {CONFIG_CHANNELS.map((c, i) => (
+              <div key={i} className="config-channel-row">
+                <span className="config-channel-delay">{c.delay}</span>
+                <div className="config-channel-bar" style={{borderLeft:`3px solid ${c.cor}`, paddingLeft:12}}>
+                  <strong>{c.canal}</strong>
+                  <span>{c.nivel}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Score comportamental */}
+        <div className="config-card config-card-full">
+          <span className="eyebrow">MOTOR COMPORTAMENTAL</span>
+          <h2 className="config-card-title">Como o score é calculado</h2>
+          <div className="config-score-factors">
+            {[
+              { fator: "Interações no portal",         peso: "+15 por evento registrado" },
+              { fator: "Abandono de jornada",           peso: "+35 (gatilho principal)" },
+              { fator: "Prazo crítico detectado",       peso: "+20 (urgência)" },
+              { fator: "Múltiplas tentativas",          peso: "+10 por retorno" },
+              { fator: "Erro técnico no preenchimento", peso: "+15 (suporte prioritário)" },
+            ].map((f) => (
+              <div key={f.fator} className="config-factor-row">
+                <span className="config-factor-name">{f.fator}</span>
+                <span className="config-factor-peso">{f.peso}</span>
+              </div>
+            ))}
+          </div>
+          <p className="config-score-note">Score ≥ 85 ou prazo urgente = sinal Crítico. Score ≥ 50 = Atenção. Abaixo = Monitoramento.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   ABA "EM ATENÇÃO" (mantida no arquivo, não está no nav)
 ========================================================= */
 
 function getSinais(user) {
@@ -847,6 +980,23 @@ function Dashboard({
 }) {
   const [chartView, setChartView] = useState("donut");
 
+  const [feedItems, setFeedItems] = useState(() =>
+    FEED_POOL.slice(0, 5).map((item, i) => ({ ...item, id: i, secsAgo: (5 - i) * 14 + 8 }))
+  );
+
+  useEffect(() => {
+    let idx = 5;
+    const interval = setInterval(() => {
+      const item = FEED_POOL[idx % FEED_POOL.length];
+      idx++;
+      setFeedItems((prev) => [
+        { ...item, id: Date.now(), secsAgo: 0 },
+        ...prev.map((f) => ({ ...f, secsAgo: f.secsAgo + 3 })).slice(0, 5),
+      ]);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   const priorityUsers = users.filter(
     (user) =>
       user.priority === "Alta" ||
@@ -908,6 +1058,28 @@ function Dashboard({
         </p>
       </section>
 
+      <div className="roi-strip">
+        <div className="roi-item">
+          <strong><CountUp value={completed} /></strong>
+          <span>proposta{completed !== 1 ? "s" : ""} recuperada{completed !== 1 ? "s" : ""}</span>
+        </div>
+        <div className="roi-divider" />
+        <div className="roi-item roi-item-highlight">
+          <strong>R$ <CountUp value={completed * 480} />k</strong>
+          <span>valor estimado resgatado</span>
+        </div>
+        <div className="roi-divider" />
+        <div className="roi-item">
+          <strong><CountUp value={successRate} />%</strong>
+          <span>taxa de reengajamento</span>
+        </div>
+        <div className="roi-divider" />
+        <div className="roi-item">
+          <strong>R$ 0</strong>
+          <span>custo de infraestrutura</span>
+        </div>
+      </div>
+
       <section className="stats-grid">
         <StatCard
           value={users.length}
@@ -943,22 +1115,19 @@ function Dashboard({
       <section className="results-strip">
         <div>
           <span>Retornaram ao Portal</span>
-          <strong>{returned}</strong>
+          <strong><CountUp value={returned} /></strong>
         </div>
-
         <div>
           <span>Retomaram a oportunidade</span>
-          <strong>{continued}</strong>
+          <strong><CountUp value={continued} /></strong>
         </div>
-
         <div>
           <span>Proposta submetida</span>
-          <strong>{completed}</strong>
+          <strong><CountUp value={completed} /></strong>
         </div>
-
         <div>
           <span>Taxa de reengajamento</span>
-          <strong>{successRate}%</strong>
+          <strong><CountUp value={successRate} />%</strong>
         </div>
       </section>
 
@@ -1020,26 +1189,48 @@ function Dashboard({
 
           <div className="funnel">
             <div>
-              <strong>{activeAutomations.length}</strong>
+              <strong><CountUp value={activeAutomations.length} /></strong>
               <span>Acionados</span>
             </div>
-
             <div>
-              <strong>{returned}</strong>
+              <strong><CountUp value={returned} /></strong>
               <span>Retornaram</span>
             </div>
-
             <div>
-              <strong>{continued}</strong>
+              <strong><CountUp value={continued} /></strong>
               <span>Retomaram</span>
             </div>
-
             <div>
-              <strong>{completed}</strong>
+              <strong><CountUp value={completed} /></strong>
               <span>Concluíram</span>
             </div>
           </div>
         </article>
+      </section>
+
+      <section className="live-feed-section">
+        <div className="live-feed-header">
+          <div>
+            <span className="eyebrow">ATIVIDADE DO PORTAL</span>
+            <h2 style={{margin:"4px 0 0"}}>Eventos em tempo real</h2>
+          </div>
+          <span className="live-indicator">
+            <span className="live-dot" />
+            ao vivo
+          </span>
+        </div>
+        <div className="live-feed-list">
+          {feedItems.map((item) => (
+            <div key={item.id} className={`feed-item${item.sys ? " feed-item-sys" : ""} feed-item-enter`}>
+              <span className="feed-time">{makeFeedTime(item.secsAgo)}</span>
+              <span className={`feed-type-dot feed-type-${item.type.replace(/\s/g,"")}`} />
+              <div className="feed-content">
+                <strong>{item.company}</strong>
+                <span>{item.type} · {item.detail}</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="main-panel">
@@ -1310,69 +1501,6 @@ function AutomationsPage({
   return (
     <section className="page-section">
 
-      {/* ── Seção: Requer ação manual ── */}
-      {manualUsers.length > 0 && (
-        <div className="manual-section">
-          <div className="manual-section-header">
-            <div>
-              <span className="manual-badge">
-                <span className="manual-badge-dot" />
-                {manualUsers.length} caso{manualUsers.length !== 1 ? "s" : ""} crítico{manualUsers.length !== 1 ? "s" : ""}
-              </span>
-              <h2 className="manual-title">Requer ação manual</h2>
-              <p className="manual-subtitle">Motor acionou — fornecedores ainda sem resposta. Intervenção humana recomendada.</p>
-            </div>
-          </div>
-
-          <div className="manual-cards">
-            {manualUsers.map((user) => (
-              <div
-                key={user.id}
-                className={`manual-card manual-card-${user.signal === "Crítico" ? "critico" : "atencao"}`}
-                onClick={() => openAutomation(user)}
-              >
-                <div className="manual-card-top">
-                  <div className="manual-card-identity">
-                    <div className={`company-avatar avatar-priority-${user.priority}`} style={{width:44,height:44,fontSize:17,flexShrink:0}}>
-                      {user.name[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <strong className="manual-card-name">{user.name}</strong>
-                      <span className="manual-card-behavior">{user.behavior}</span>
-                    </div>
-                  </div>
-                  <div className="manual-card-meta">
-                    <SignalBadge signal={user.signal} />
-                    {user.prazo && (
-                      <span className={`manual-prazo${user.prazoUrgente ? " manual-prazo-urgente" : ""}`}>
-                        Prazo: {user.prazo}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="manual-card-actions" onClick={(e) => e.stopPropagation()}>
-                  <AcaoBtn userId={user.id} acao="email"   fired={fired} onFire={fireAction} variant="primary" />
-                  <AcaoBtn userId={user.id} acao="sala"    fired={fired} onFire={fireAction} variant="secondary" />
-                  {user.signal === "Crítico" && (
-                    <AcaoBtn userId={user.id} acao="ligacao" fired={fired} onFire={fireAction} variant="danger" />
-                  )}
-                  {user.prazoUrgente && (
-                    <AcaoBtn userId={user.id} acao="whats" fired={fired} onFire={fireAction} variant="secondary" />
-                  )}
-                  <button
-                    className="aa-btn aa-btn-ghost"
-                    onClick={(e) => { e.stopPropagation(); openAutomation(user); }}
-                  >
-                    Ver análise completa →
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* ── Seção: Motor ativo ── */}
       <div className="automations-band">
         <div className="page-hero" style={{ marginBottom: 0 }}>
@@ -1565,6 +1693,31 @@ function UserDetails({
           <div className="profile-score-ring">
             <ScoreRing score={user.score} />
           </div>
+          <button
+            className="export-btn"
+            onClick={() => {
+              const lines = [
+                `Fornecedor: ${user.name}`,
+                `Tipo: ${user.type}`,
+                `Prioridade: ${user.priority}`,
+                `Sinal: ${user.signal}`,
+                `Comportamento: ${user.behavior}`,
+                `Interações: ${user.interactions}`,
+                `Último acesso: ${user.lastAccess}`,
+                `Score comportamental: ${user.score}`,
+                ``,
+                `Histórico de eventos:`,
+                ...user.events.map(e => `${e.time}  |  ${e.type}  |  ${e.detail}`),
+              ];
+              const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = `${user.name.replace(/\s+/g,"_")}_ficha.txt`;
+              a.click();
+            }}
+          >
+            Exportar ficha
+          </button>
         </div>
       </div>
 
@@ -2132,8 +2285,8 @@ function App() {
     window.location.hash = "#/automations";
   }
 
-  function goAtencao() {
-    window.location.hash = "#/atencao";
+  function goConfig() {
+    window.location.hash = "#/config";
   }
 
   function goBack() {
@@ -5171,6 +5324,355 @@ function App() {
           pointer-events: none;
         }
 
+        /* ── ROI Strip ── */
+        .roi-strip {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: var(--shadow);
+          margin-bottom: 28px;
+        }
+        .roi-item {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          padding: 20px 16px;
+          text-align: center;
+        }
+        .roi-item strong {
+          font-size: clamp(22px, 3vw, 32px);
+          font-weight: 800;
+          letter-spacing: -.04em;
+          line-height: 1;
+        }
+        .roi-item span {
+          font-size: 11px;
+          color: var(--muted);
+          text-transform: uppercase;
+          letter-spacing: .07em;
+          font-weight: 600;
+        }
+        .roi-item-highlight strong { color: var(--blue); }
+        .roi-divider {
+          width: 1px;
+          height: 44px;
+          background: var(--border);
+          flex-shrink: 0;
+        }
+
+        /* ── Live Feed ── */
+        .live-feed-section {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 24px;
+          padding: 24px 28px;
+          box-shadow: var(--shadow);
+          margin-bottom: 28px;
+        }
+        .live-feed-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          margin-bottom: 20px;
+        }
+        .live-indicator {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 14px;
+          border-radius: 999px;
+          background: rgba(113,191,68,.12);
+          color: #4f9130;
+          font-size: 12px;
+          font-weight: 700;
+          flex-shrink: 0;
+        }
+        .live-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #71bf44;
+          flex-shrink: 0;
+          animation: pulseDot 1.4s ease-in-out infinite;
+        }
+        .live-feed-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+        .feed-item {
+          display: grid;
+          grid-template-columns: 64px 12px 1fr;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 0;
+          border-bottom: 1px solid var(--border);
+          animation: feedSlide .35s ease;
+        }
+        .feed-item:last-child { border-bottom: 0; }
+        @keyframes feedSlide {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: none; }
+        }
+        .feed-time {
+          font-size: 11px;
+          color: var(--muted);
+          font-weight: 600;
+          text-align: right;
+          white-space: nowrap;
+        }
+        .feed-type-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          flex-shrink: 0;
+          background: var(--border);
+        }
+        .feed-type-dot.feed-type-Login          { background: #29488f; }
+        .feed-type-dot.feed-type-Busca          { background: #71bf44; }
+        .feed-type-dot.feed-type-Visualização   { background: #5474c8; }
+        .feed-type-dot.feed-type-Download       { background: #d7a633; }
+        .feed-type-dot.feed-type-InícioDeJornada { background: #d7a633; }
+        .feed-type-dot.feed-type-Abandono       { background: #d85b5b; }
+        .feed-type-dot.feed-type-Conclusão      { background: #71bf44; }
+        .feed-type-dot.feed-type-Detecção       { background: #d85b5b; }
+        .feed-type-dot.feed-type-Automação      { background: #8d9aad; }
+        .feed-type-dot.feed-type-Retorno        { background: #71bf44; }
+        .feed-type-dot.feed-type-SalaDeColaboração { background: #5474c8; }
+        .feed-item-sys .feed-time { color: var(--blue); }
+        .feed-content {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 0;
+        }
+        .feed-content strong {
+          font-size: 13px;
+          font-weight: 650;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .feed-content span {
+          font-size: 12px;
+          color: var(--muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        /* ── Exportar ── */
+        .export-btn {
+          margin-top: 8px;
+          padding: 8px 14px;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          background: var(--surface-soft);
+          color: var(--text-secondary);
+          font-size: 12px;
+          font-weight: 650;
+          cursor: pointer;
+          transition: background .15s, color .15s;
+          white-space: nowrap;
+        }
+        .export-btn:hover {
+          background: var(--surface-hover);
+          color: var(--text);
+        }
+
+        /* ── Config Page ── */
+        .config-page {
+          display: flex;
+          flex-direction: column;
+          gap: 28px;
+        }
+        .config-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
+          padding-top: 8px;
+        }
+        .config-title {
+          margin: 6px 0 4px;
+          font-size: clamp(22px, 3vw, 32px);
+          letter-spacing: -.03em;
+        }
+        .config-subtitle {
+          margin: 0;
+          font-size: 14px;
+          color: var(--text-secondary);
+        }
+        .config-status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          padding: 8px 16px;
+          border-radius: 999px;
+          border: 1px solid var(--border);
+          background: var(--surface);
+          font-size: 13px;
+          font-weight: 650;
+          color: #4f9130;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .config-flow {
+          display: flex;
+          align-items: center;
+          gap: 0;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 28px 32px;
+          box-shadow: var(--shadow);
+          overflow-x: auto;
+        }
+        .config-flow-node {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+          padding: 16px 24px;
+          border-radius: 14px;
+          text-align: center;
+          min-width: 160px;
+          flex-shrink: 0;
+        }
+        .config-flow-node strong {
+          font-size: 14px;
+          font-weight: 750;
+        }
+        .config-flow-node span {
+          font-size: 12px;
+          color: var(--muted);
+        }
+        .config-flow-node-portal  { background: rgba(41,72,143,.08); border: 1px solid rgba(41,72,143,.18); }
+        .config-flow-node-engine  { background: rgba(113,191,68,.08); border: 1px solid rgba(113,191,68,.22); }
+        .config-flow-node-channels { background: rgba(215,166,51,.08); border: 1px solid rgba(215,166,51,.22); }
+        .config-flow-arrow {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          min-width: 60px;
+        }
+        .config-arrow-label {
+          font-size: 10px;
+          color: var(--muted);
+          text-transform: uppercase;
+          letter-spacing: .08em;
+          font-weight: 700;
+        }
+        .config-arrow-line {
+          width: 100%;
+          height: 2px;
+          background: linear-gradient(90deg, var(--border), var(--border) 60%, transparent);
+          position: relative;
+        }
+        .config-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+        .config-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 24px;
+          box-shadow: var(--shadow);
+        }
+        .config-card-full {
+          grid-column: 1 / -1;
+        }
+        .config-card-title {
+          margin: 6px 0 18px;
+          font-size: 17px;
+          letter-spacing: -.02em;
+        }
+        .config-modules { display: flex; flex-direction: column; gap: 14px; }
+        .config-module-row {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding-bottom: 14px;
+          border-bottom: 1px solid var(--border);
+        }
+        .config-module-row:last-child { border-bottom: 0; padding-bottom: 0; }
+        .config-module-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .config-module-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #71bf44;
+          flex-shrink: 0;
+        }
+        .config-module-info strong { font-size: 13px; font-weight: 700; }
+        .config-module-events { display: flex; gap: 6px; flex-wrap: wrap; }
+        .config-event-tag {
+          padding: 3px 10px;
+          border-radius: 999px;
+          background: var(--surface-soft);
+          border: 1px solid var(--border);
+          font-size: 11px;
+          color: var(--text-secondary);
+          font-weight: 600;
+        }
+        .config-channels { display: flex; flex-direction: column; gap: 12px; }
+        .config-channel-row {
+          display: grid;
+          grid-template-columns: 52px 1fr;
+          gap: 12px;
+          align-items: center;
+        }
+        .config-channel-delay {
+          font-size: 11px;
+          font-weight: 750;
+          color: var(--muted);
+          text-align: right;
+        }
+        .config-channel-bar strong { display: block; font-size: 13px; font-weight: 700; }
+        .config-channel-bar span   { font-size: 11px; color: var(--muted); }
+        .config-score-factors { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+        .config-factor-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          padding: 10px 14px;
+          border-radius: 10px;
+          background: var(--surface-soft);
+        }
+        .config-factor-name { font-size: 13px; font-weight: 600; }
+        .config-factor-peso { font-size: 12px; color: var(--blue); font-weight: 700; white-space: nowrap; }
+        .config-score-note {
+          margin: 0;
+          font-size: 12px;
+          color: var(--muted);
+          line-height: 1.5;
+        }
+        @media (max-width: 768px) {
+          .roi-strip { flex-direction: column; }
+          .roi-divider { width: 100%; height: 1px; }
+          .config-grid { grid-template-columns: 1fr; }
+          .config-card-full { grid-column: 1; }
+          .config-flow { flex-direction: column; gap: 12px; align-items: stretch; }
+          .config-flow-arrow { flex-direction: row; }
+          .config-arrow-line { height: 2px; width: 40px; }
+        }
+
         /* ── AtencaoPage ── */
         .atencao-page {
           display: flex;
@@ -5416,7 +5918,7 @@ function App() {
         goHome={goHome}
         goUsers={goUsers}
         goAutomations={goAutomations}
-        goAtencao={goAtencao}
+        goConfig={goConfig}
         page={route.page}
         theme={theme}
         toggleTheme={toggleTheme}
@@ -5431,6 +5933,8 @@ function App() {
             openAutomations={goAutomations}
           />
         )}
+
+        {route.page === "config" && <ConfigPage />}
 
         {route.page === "users" && (
           <UsersPage
