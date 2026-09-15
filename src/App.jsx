@@ -11,17 +11,17 @@ const baseUsers = [
     type: "Fornecedor",
     lastAccess: "Hoje, 10:15",
     events: [
-      { time: "10:02", type: "Login", detail: "Acesso ao Portal", phase: "before" },
-      { time: "10:05", type: "Busca", detail: "Busca por oportunidades", phase: "before" },
-      { time: "10:07", type: "Visualização", detail: "Visualizou uma oportunidade", phase: "before" },
-      { time: "10:10", type: "Download", detail: "Baixou um documento", phase: "before" },
-      { time: "10:12", type: "Início de jornada", detail: "Iniciou uma atividade", phase: "before" },
-      { time: "10:15", type: "Abandono", detail: "Saiu antes da conclusão", phase: "before" },
+      { time: "10:02", type: "Login", detail: "Acesso ao Portal Petronect", phase: "before" },
+      { time: "10:05", type: "Busca", detail: "Consultou editais de licitação abertos", phase: "before" },
+      { time: "10:07", type: "Visualização", detail: "Visualizou edital nº 4600123456", phase: "before" },
+      { time: "10:10", type: "Download", detail: "Baixou caderno de especificações técnicas", phase: "before" },
+      { time: "10:12", type: "Início de jornada", detail: "Iniciou envio de proposta comercial", phase: "before" },
+      { time: "10:15", type: "Abandono", detail: "Abandonou envio antes do prazo de entrega", phase: "before" },
     ],
     followUpTemplate: [
-      { time: "11:02", type: "Login", detail: "Retornou ao Portal após o reengajamento", phase: "after" },
-      { time: "11:07", type: "Retomada de jornada", detail: "Retomou a atividade anteriormente abandonada", phase: "after" },
-      { time: "11:18", type: "Conclusão", detail: "Concluiu a jornada", phase: "after" },
+      { time: "11:02", type: "Login", detail: "Retornou ao Portal após contato da equipe Petronect", phase: "after" },
+      { time: "11:07", type: "Retomada de jornada", detail: "Retomou envio da proposta comercial", phase: "after" },
+      { time: "11:18", type: "Conclusão", detail: "Proposta submetida dentro do prazo", phase: "after" },
     ],
   },
 
@@ -31,10 +31,10 @@ const baseUsers = [
     type: "Fornecedor",
     lastAccess: "Hoje, 09:40",
     events: [
-      { time: "09:20", type: "Login", detail: "Acesso ao Portal", phase: "before" },
-      { time: "09:25", type: "Busca", detail: "Realizou uma busca", phase: "before" },
-      { time: "09:30", type: "Visualização", detail: "Visualizou conteúdo", phase: "before" },
-      { time: "09:40", type: "Conclusão", detail: "Concluiu a jornada", phase: "before" },
+      { time: "09:20", type: "Login", detail: "Acesso ao Portal Petronect", phase: "before" },
+      { time: "09:25", type: "Busca", detail: "Consultou oportunidades disponíveis", phase: "before" },
+      { time: "09:30", type: "Visualização", detail: "Visualizou edital nº 4600098712", phase: "before" },
+      { time: "09:40", type: "Conclusão", detail: "Proposta submetida com sucesso", phase: "before" },
     ],
     followUpTemplate: [],
   },
@@ -45,8 +45,8 @@ const baseUsers = [
     type: "Fornecedor",
     lastAccess: "Há 12 dias",
     events: [
-      { time: "14:02", type: "Login", detail: "Acesso ao Portal", phase: "before" },
-      { time: "14:05", type: "Visualização", detail: "Visualizou uma página", phase: "before" },
+      { time: "14:02", type: "Login", detail: "Acesso ao Portal Petronect", phase: "before" },
+      { time: "14:05", type: "Visualização", detail: "Visualizou área de cadastro de fornecedor", phase: "before" },
     ],
     followUpTemplate: [],
   },
@@ -57,14 +57,14 @@ const baseUsers = [
     type: "Fornecedor",
     lastAccess: "Hoje, 09:35",
     events: [
-      { time: "08:30", type: "Login", detail: "Acesso ao Portal", phase: "before" },
-      { time: "08:35", type: "Busca", detail: "Realizou uma busca", phase: "before" },
-      { time: "08:40", type: "Visualização", detail: "Visualizou conteúdo", phase: "before" },
-      { time: "08:48", type: "Início de jornada", detail: "Iniciou uma atividade", phase: "before" },
-      { time: "08:55", type: "Abandono", detail: "Saiu antes da conclusão", phase: "before" },
-      { time: "09:22", type: "Login", detail: "Retornou ao Portal após o reengajamento", phase: "after" },
-      { time: "09:27", type: "Retomada de jornada", detail: "Retomou a atividade anteriormente abandonada", phase: "after" },
-      { time: "09:35", type: "Conclusão", detail: "Concluiu a jornada com sucesso", phase: "after" },
+      { time: "08:30", type: "Login", detail: "Acesso ao Portal Petronect", phase: "before" },
+      { time: "08:35", type: "Busca", detail: "Consultou editais da categoria Tecnologia", phase: "before" },
+      { time: "08:40", type: "Visualização", detail: "Visualizou edital nº 4600201345", phase: "before" },
+      { time: "08:48", type: "Início de jornada", detail: "Iniciou envio de proposta técnica", phase: "before" },
+      { time: "08:55", type: "Abandono", detail: "Abandonou envio — erro no preenchimento de campos obrigatórios", phase: "before" },
+      { time: "09:22", type: "Login", detail: "Retornou após orientação da equipe Petronect", phase: "after" },
+      { time: "09:27", type: "Retomada de jornada", detail: "Corrigiu campos e retomou envio da proposta", phase: "after" },
+      { time: "09:35", type: "Conclusão", detail: "Proposta técnica submetida com sucesso", phase: "after" },
     ],
     followUpTemplate: [
       { time: "09:22", type: "Login", detail: "Retornou ao Portal após o reengajamento", phase: "after" },
@@ -79,10 +79,10 @@ const baseUsers = [
     type: "Cliente",
     lastAccess: "Ontem, 16:20",
     events: [
-      { time: "15:45", type: "Login", detail: "Acesso ao Portal", phase: "before" },
-      { time: "15:53", type: "Busca", detail: "Realizou uma busca", phase: "before" },
-      { time: "16:03", type: "Download", detail: "Baixou um documento", phase: "before" },
-      { time: "16:20", type: "Conclusão", detail: "Concluiu a atividade", phase: "before" },
+      { time: "15:45", type: "Login", detail: "Acesso ao Portal Petronect", phase: "before" },
+      { time: "15:53", type: "Busca", detail: "Consultou contratos de logística disponíveis", phase: "before" },
+      { time: "16:03", type: "Download", detail: "Baixou minuta de contrato de prestação de serviços", phase: "before" },
+      { time: "16:20", type: "Conclusão", detail: "Documentação enviada e processo finalizado", phase: "before" },
     ],
     followUpTemplate: [],
   },
@@ -93,12 +93,12 @@ const baseUsers = [
     type: "Fornecedor",
     lastAccess: "Hoje, 11:30",
     events: [
-      { time: "11:01", type: "Login", detail: "Acesso ao Portal", phase: "before" },
-      { time: "11:05", type: "Busca", detail: "Busca por oportunidades", phase: "before" },
-      { time: "11:10", type: "Visualização", detail: "Visualizou oportunidade", phase: "before" },
-      { time: "11:16", type: "Busca", detail: "Realizou nova busca", phase: "before" },
-      { time: "11:22", type: "Visualização", detail: "Visualizou outro conteúdo", phase: "before" },
-      { time: "11:30", type: "Visualização", detail: "Continuou navegando", phase: "before" },
+      { time: "11:01", type: "Login", detail: "Acesso ao Portal Petronect", phase: "before" },
+      { time: "11:05", type: "Busca", detail: "Consultou editais da categoria Serviços Gerais", phase: "before" },
+      { time: "11:10", type: "Visualização", detail: "Visualizou edital nº 4600334421", phase: "before" },
+      { time: "11:16", type: "Busca", detail: "Refinou busca por região geográfica", phase: "before" },
+      { time: "11:22", type: "Visualização", detail: "Visualizou edital nº 4600334590", phase: "before" },
+      { time: "11:30", type: "Visualização", detail: "Consultou requisitos de habilitação técnica", phase: "before" },
     ],
     followUpTemplate: [],
   },
@@ -282,16 +282,27 @@ function applyReengagementEngine(user) {
     status = "Concluído";
   }
 
+  let trigger = "Alta prioridade + abandono após demonstração de interesse";
+  let action = "Contato prioritário com link de retomada da proposta";
+  let execution = "Olá! Notamos que você iniciou uma proposta no Portal mas não concluiu. Nossa equipe pode ajudar — retome de onde parou.";
+
+  if (user.behavior === "Alta frequência sem conclusão") {
+    trigger = "Alta frequência de navegação sem submissão de proposta detectada";
+    action = "Convite para sessão de orientação com especialista Petronect";
+    execution = "Identificamos que você navega com frequência pelo Portal mas ainda não submeteu uma proposta. Podemos agendar uma sessão de orientação com nossa equipe técnica?";
+  } else if (user.behavior === "Alta interação + abandono") {
+    trigger = "Abandono após início de proposta comercial — comportamento de alta intenção";
+    action = "Contato prioritário com link direto de retomada da proposta";
+    execution = "Olá! Notamos que você iniciou uma proposta no Portal mas não concluiu. Nossa equipe pode ajudar — retome de onde parou.";
+  }
+
   return {
     ...user,
     automation: {
       active: true,
-      trigger:
-        "Alta prioridade + abandono após demonstração de interesse",
-      action:
-        "Reengajamento gerado automaticamente",
-      execution:
-        "Olá! Notamos que você iniciou uma proposta no Portal mas não concluiu. Nossa equipe pode ajudar — retome de onde parou.",
+      trigger,
+      action,
+      execution,
       status,
       returned,
       continued,
@@ -386,12 +397,9 @@ function AutomationBadge({ automation }) {
 function StatCard({ value, label, type }) {
   return (
     <article className="stat-card">
-      <div className={`stat-line stat-line-${type}`} />
-
-      <div>
-        <strong>{value}</strong>
-        <span>{label}</span>
-      </div>
+      <div className={`stat-card-accent stat-card-accent-${type}`} />
+      <strong className="stat-value">{value}</strong>
+      <span className="stat-label">{label}</span>
     </article>
   );
 }
@@ -484,6 +492,65 @@ function MiniBar({
           className={`mini-bar-fill mini-${tone}`}
           style={{ width: `${width}%` }}
         />
+      </div>
+    </div>
+  );
+}
+
+function DonutChart({ segments }) {
+  const total = segments.reduce((s, seg) => s + seg.value, 0);
+  if (total === 0) return null;
+
+  const r = 46;
+  const cx = 70;
+  const cy = 70;
+  const circ = 2 * Math.PI * r;
+
+  let cumulative = 0;
+
+  const arcs = segments.map((seg) => {
+    const frac = seg.value / total;
+    const dash = frac * circ;
+    const dashOffset = circ * (1 - cumulative);
+    cumulative += frac;
+    return { ...seg, dash, dashOffset };
+  });
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+      <svg width="140" height="140" viewBox="0 0 140 140" style={{ flexShrink: 0 }}>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--surface-soft)" strokeWidth="18" />
+        {arcs.map((arc, i) => (
+          <circle
+            key={i}
+            cx={cx}
+            cy={cy}
+            r={r}
+            fill="none"
+            stroke={arc.color}
+            strokeWidth="18"
+            strokeDasharray={`${arc.dash} ${circ}`}
+            strokeDashoffset={arc.dashOffset}
+            style={{ transform: "rotate(-90deg)", transformOrigin: `${cx}px ${cy}px` }}
+          />
+        ))}
+        <text x={cx} y={cy - 7} textAnchor="middle"
+          style={{ fontSize: "22px", fontWeight: 750, fill: "var(--text)", fontFamily: "inherit" }}>
+          {total}
+        </text>
+        <text x={cx} y={cy + 14} textAnchor="middle"
+          style={{ fontSize: "10px", fill: "var(--muted)", fontFamily: "inherit" }}>
+          usuários
+        </text>
+      </svg>
+      <div style={{ display: "flex", flexDirection: "column", gap: 11, flex: 1, minWidth: 100 }}>
+        {segments.map((seg) => (
+          <div key={seg.label} style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: seg.color, flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: "var(--text-secondary)", fontWeight: 550 }}>{seg.label}</span>
+            <strong style={{ fontSize: 15, marginLeft: "auto" }}>{seg.value}</strong>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -623,26 +690,13 @@ function Dashboard({
             </div>
           </div>
 
-          <div className="bars-list">
-            <MiniBar
-              label="Alta"
-              value={priorityCounts.Alta}
-              max={maxPriority}
-              tone="red"
-            />
-
-            <MiniBar
-              label="Média"
-              value={priorityCounts.Média}
-              max={maxPriority}
-              tone="yellow"
-            />
-
-            <MiniBar
-              label="Baixa"
-              value={priorityCounts.Baixa}
-              max={maxPriority}
-              tone="gray"
+          <div style={{ marginTop: 24 }}>
+            <DonutChart
+              segments={[
+                { label: "Alta prioridade", value: priorityCounts.Alta, color: "#d85b5b" },
+                { label: "Média prioridade", value: priorityCounts.Média, color: "#d7a633" },
+                { label: "Baixa prioridade", value: priorityCounts.Baixa, color: "#8d9aad" },
+              ]}
             />
           </div>
         </article>
@@ -2094,48 +2148,58 @@ function App() {
         }
 
         .stat-card {
-          min-height: 158px;
+          min-height: 140px;
 
-          padding: 26px;
+          padding: 28px 26px 24px;
 
           border-radius: 26px;
 
           display: flex;
           flex-direction: column;
-          justify-content: space-between;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+
+          gap: 6px;
+
+          position: relative;
+          overflow: hidden;
         }
 
-        .stat-line {
-          width: 42px;
-          height: 5px;
-
-          border-radius: 999px;
+        .stat-card-accent {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          border-radius: 26px 26px 0 0;
         }
 
-        .stat-line-blue {
+        .stat-card-accent-blue {
           background: var(--blue);
         }
 
-        .stat-line-green {
+        .stat-card-accent-green {
           background: var(--green);
         }
 
-        .stat-card strong {
+        .stat-value {
           display: block;
 
-          font-size: 45px;
+          font-size: 52px;
           font-weight: 750;
           letter-spacing: -.05em;
+          line-height: 1;
         }
 
-        .stat-card span {
+        .stat-label {
           display: block;
 
-          margin-top: 6px;
+          margin-top: 4px;
 
           color: var(--text-secondary);
 
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 550;
         }
 
@@ -2728,6 +2792,7 @@ function App() {
           margin-bottom: 20px;
 
           display: flex;
+          align-items: center;
           justify-content: space-between;
         }
 
