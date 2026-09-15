@@ -649,7 +649,7 @@ function Dashboard({
     <>
       <section className="hero">
         <div className="hero-tag">
-          Inteligência comportamental do Portal
+          Rastreabilidade e reengajamento · Portal Petronect
         </div>
 
         <h1>
@@ -658,9 +658,9 @@ function Dashboard({
         </h1>
 
         <p>
-          O Petronect Insights transforma eventos de navegação
-          em comportamento, prioridade e ações automáticas de
-          reengajamento.
+          Cada oportunidade no Petronect tem requisitos, prazos e condições próprias.
+          O Insights identifica o fornecedor certo, no momento certo,
+          e aciona o canal mais eficiente.
         </p>
       </section>
 
@@ -703,17 +703,17 @@ function Dashboard({
         </div>
 
         <div>
-          <span>Retomaram a jornada</span>
+          <span>Retomaram a oportunidade</span>
           <strong>{continued}</strong>
         </div>
 
         <div>
-          <span>Concluíram</span>
+          <span>Proposta submetida</span>
           <strong>{completed}</strong>
         </div>
 
         <div>
-          <span>Taxa de sucesso</span>
+          <span>Taxa de reengajamento</span>
           <strong>{successRate}%</strong>
         </div>
       </section>
@@ -926,9 +926,9 @@ function UsersPage({
   return (
     <section className="page-section">
       <div className="page-hero">
-        <span className="eyebrow">USUÁRIOS</span>
-        <h1>Visão comportamental</h1>
-        <p>Explore os fornecedores analisados, seus comportamentos e prioridades de reengajamento.</p>
+        <span className="eyebrow">RASTREABILIDADE POR OPORTUNIDADE</span>
+        <h1>Fornecedores do Portal</h1>
+        <p>Histórico de ações e participações de cada fornecedor — identifique comportamentos, prazos críticos e quem precisa de suporte agora.</p>
       </div>
 
       <div className="search-wrap">
@@ -1085,8 +1085,8 @@ function AutomationsPage({
       <div className="automations-band">
         <div className="page-hero" style={{ marginBottom: 0 }}>
           <span className="eyebrow">CENTRAL DE AUTOMAÇÕES</span>
-          <h1>Reengajamentos</h1>
-          <p>Acompanhe em tempo real os fornecedores acionados automaticamente pelo motor comportamental.</p>
+          <h1>Reengajamentos ativos</h1>
+          <p>Fornecedores acionados automaticamente — organizados por oportunidade, com canal e urgência definidos pelo comportamento no Portal.</p>
         </div>
         <div className="automations-band-stats">
           <div>
@@ -1486,8 +1486,9 @@ function AutomationPage({
         </h1>
 
         <p>
-          O sistema detectou o momento de agir
-          e acompanha os novos eventos do usuário.
+          Cada oportunidade tem seus requisitos e prazo próprios.
+          O sistema detectou o momento crítico e está acompanhando
+          a jornada em tempo real.
         </p>
       </div>
 
