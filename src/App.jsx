@@ -1551,40 +1551,41 @@ function AutomationPage({
           </div>
 
           <div className="automation-details">
-            <div>
-              <span>Gatilho detectado</span>
+            {/* Gatilho — full width com acento */}
+            <div className="ad-gatilho">
+              <span className="eyebrow">GATILHO DETECTADO</span>
               <strong>{automation.trigger}</strong>
             </div>
 
-            {automation.abandonedAt && (
-              <div>
-                <span>Etapa de abandono</span>
-                <strong>{automation.abandonedAt}</strong>
+            {/* Chips: Etapa + Canal + Prazo */}
+            <div className="ad-chips">
+              {automation.abandonedAt && (
+                <div className="ad-chip">
+                  <span>Etapa de abandono</span>
+                  <strong>{automation.abandonedAt}</strong>
+                </div>
+              )}
+              <div className="ad-chip">
+                <span>Canal recomendado</span>
+                <strong>{automation.channel}</strong>
+                <span className={`channel-level channel-level-${automation.channelLevel}`}>
+                  {automation.channelLevel}
+                </span>
               </div>
-            )}
-
-            <div>
-              <span>Canal recomendado</span>
-              <strong>{automation.channel}</strong>
-              <span className={`channel-level channel-level-${automation.channelLevel}`}>
-                {automation.channelLevel}
-              </span>
+              {user.edital && (
+                <div className={`ad-chip${user.prazoUrgente ? " ad-chip-urgent" : ""}`}>
+                  <span>Prazo · edital {user.edital}</span>
+                  <strong className={user.prazoUrgente ? "prazo-urgente" : ""}>
+                    {user.prazo}
+                  </strong>
+                </div>
+              )}
             </div>
 
-            {user.edital && (
-              <div>
-                <span>Prazo do edital {user.edital}</span>
-                <strong className={user.prazoUrgente ? "prazo-urgente" : ""}>
-                  {user.prazo}
-                </strong>
-              </div>
-            )}
-
-            <div style={{ gridColumn: "1 / -1" }}>
-              <span>Mensagem enviada (simulada)</span>
-              <strong style={{ fontStyle: "italic", fontWeight: 500 }}>
-                "{automation.execution}"
-              </strong>
+            {/* Mensagem — full width */}
+            <div className="ad-msg">
+              <span className="eyebrow">MENSAGEM ENVIADA</span>
+              <p>"{automation.execution}"</p>
             </div>
           </div>
 
@@ -2536,7 +2537,7 @@ function App() {
         .user-row {
           width: 100%;
 
-          padding: 19px 14px;
+          padding: 13px 14px;
 
           border: 0;
           border-top:
@@ -3774,8 +3775,8 @@ function App() {
         .automation-main-card,
         .automation-side-card {
           padding: 30px;
-
           border-radius: 29px;
+          text-align: left;
         }
 
         .automation-card-header {
@@ -3800,42 +3801,79 @@ function App() {
 
         .automation-details {
           margin-top: 27px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          text-align: left;
+        }
 
+        /* Gatilho — full width com acento esquerdo */
+        .ad-gatilho {
+          padding: 16px 20px;
+          border-radius: 16px;
+          background: var(--surface-soft);
+          border: 1px solid var(--border);
+          border-left: 4px solid var(--blue);
+        }
+
+        .ad-gatilho strong {
+          display: block;
+          margin-top: 6px;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        /* Chips: Etapa + Canal + Prazo */
+        .ad-chips {
           display: grid;
-
-          grid-template-columns:
-            repeat(3,1fr);
-
+          grid-template-columns: repeat(3, 1fr);
           gap: 12px;
         }
 
-        .automation-details > div {
-          padding: 17px;
-
-          border-radius: 18px;
-
+        .ad-chip {
+          padding: 16px 18px;
+          border-radius: 16px;
           background: var(--surface-soft);
+          border: 1px solid var(--border);
+          text-align: left;
+        }
 
+        .ad-chip > span:first-child {
+          display: block;
+          color: var(--muted);
+          font-size: 10px;
+          font-weight: 750;
+          text-transform: uppercase;
+          letter-spacing: .06em;
+          margin-bottom: 7px;
+        }
+
+        .ad-chip > strong {
+          display: block;
+          font-size: 13px;
+          line-height: 1.4;
+          margin-bottom: 7px;
+        }
+
+        .ad-chip-urgent {
+          border-color: rgba(216,91,91,.3);
+          background: rgba(216,91,91,.04);
+        }
+
+        /* Mensagem — full width */
+        .ad-msg {
+          padding: 16px 20px;
+          border-radius: 16px;
+          background: var(--surface-soft);
           border: 1px solid var(--border);
         }
 
-        .automation-details span,
-        .automation-details strong {
-          display: block;
-        }
-
-        .automation-details span {
-          color: var(--muted);
-
-          font-size: 11px;
-        }
-
-        .automation-details strong {
-          margin-top: 6px;
-
+        .ad-msg p {
+          margin: 6px 0 0;
           font-size: 13px;
-
-          line-height: 1.45;
+          line-height: 1.7;
+          font-style: italic;
+          color: var(--text-secondary);
         }
 
         .automation-divider {
@@ -4371,11 +4409,12 @@ function App() {
 
         .contact-step {
           display: grid;
-          grid-template-columns: 52px 20px 1fr auto;
+          grid-template-columns: 48px 14px 1fr 68px;
           align-items: center;
-          gap: 12px;
-          padding: 12px 0;
+          gap: 10px;
+          padding: 11px 0;
           border-bottom: 1px solid var(--border);
+          text-align: left;
         }
 
         .contact-step:last-child {
@@ -4411,6 +4450,7 @@ function App() {
           font-size: 13px;
           font-weight: 550;
           color: var(--text-secondary);
+          text-align: left;
         }
 
         .contact-step-done .contact-step-label {
@@ -4422,6 +4462,7 @@ function App() {
           font-size: 11px;
           font-weight: 750;
           white-space: nowrap;
+          text-align: right;
         }
 
         .contact-step-done .contact-step-status {
