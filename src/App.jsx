@@ -11,15 +11,15 @@ const baseUsers = [
     type: "Fornecedor",
     lastAccess: "Hoje, 10:15",
     edital: "nº 4600123456",
-    prazo: "18/09 — faltam 3 dias",
+    prazo: "18/09, faltam 3 dias",
     prazoUrgente: true,
     events: [
       { time: "10:02", type: "Login", detail: "Acesso ao Portal Petronect", phase: "before" },
-      { time: "10:05", type: "Busca", detail: "Módulo Oportunidades — consultou editais de licitação abertos", phase: "before" },
-      { time: "10:07", type: "Visualização", detail: "Módulo Oportunidades — visualizou edital nº 4600123456", phase: "before" },
-      { time: "10:10", type: "Download", detail: "Módulo Propostas — baixou caderno de especificações técnicas", phase: "before" },
-      { time: "10:12", type: "Início de jornada", detail: "Módulo Propostas — iniciou envio de proposta comercial", phase: "before" },
-      { time: "10:15", type: "Abandono", detail: "Módulo Propostas — abandonou envio antes do prazo de entrega", phase: "before" },
+      { time: "10:05", type: "Busca", detail: "Módulo Oportunidades, consultou editais de licitação abertos", phase: "before" },
+      { time: "10:07", type: "Visualização", detail: "Módulo Oportunidades, visualizou edital nº 4600123456", phase: "before" },
+      { time: "10:10", type: "Download", detail: "Módulo Propostas, baixou caderno de especificações técnicas", phase: "before" },
+      { time: "10:12", type: "Início de jornada", detail: "Módulo Propostas, iniciou envio de proposta comercial", phase: "before" },
+      { time: "10:15", type: "Abandono", detail: "Módulo Propostas, abandonou envio antes do prazo de entrega", phase: "before" },
     ],
     followUpTemplate: [
       { time: "11:02", type: "Login", detail: "Retornou ao Portal após contato da equipe Petronect", phase: "after" },
@@ -60,14 +60,14 @@ const baseUsers = [
     type: "Fornecedor",
     lastAccess: "Hoje, 09:35",
     edital: "nº 4600201345",
-    prazo: "22/09 — faltam 7 dias",
+    prazo: "22/09, faltam 7 dias",
     prazoUrgente: false,
     events: [
       { time: "08:30", type: "Login", detail: "Acesso ao Portal Petronect", phase: "before" },
-      { time: "08:35", type: "Busca", detail: "Módulo Oportunidades — consultou editais da categoria Tecnologia", phase: "before" },
-      { time: "08:40", type: "Visualização", detail: "Módulo Oportunidades — visualizou edital nº 4600201345", phase: "before" },
-      { time: "08:48", type: "Início de jornada", detail: "Módulo Propostas — iniciou envio de proposta técnica", phase: "before" },
-      { time: "08:55", type: "Abandono", detail: "Módulo Propostas — erro no preenchimento de campos obrigatórios", phase: "before" },
+      { time: "08:35", type: "Busca", detail: "Módulo Oportunidades, consultou editais da categoria Tecnologia", phase: "before" },
+      { time: "08:40", type: "Visualização", detail: "Módulo Oportunidades, visualizou edital nº 4600201345", phase: "before" },
+      { time: "08:48", type: "Início de jornada", detail: "Módulo Propostas, iniciou envio de proposta técnica", phase: "before" },
+      { time: "08:55", type: "Abandono", detail: "Módulo Propostas, erro no preenchimento de campos obrigatórios", phase: "before" },
     ],
     followUpTemplate: [
       { time: "09:22", type: "Login", detail: "Retornou ao Portal após o reengajamento", phase: "after" },
@@ -287,26 +287,26 @@ function applyReengagementEngine(user) {
 
   let trigger = "Alta prioridade + abandono após demonstração de interesse";
   let action = "Contato prioritário com link de retomada da proposta";
-  let execution = "Olá! Notamos que você iniciou uma proposta no Portal mas não concluiu. Nossa equipe pode ajudar — retome de onde parou.";
+  let execution = "Olá! Notamos que você iniciou uma proposta no Portal mas não concluiu. Nossa equipe pode ajudar, retome de onde parou.";
 
   if (user.behavior === "Alta frequência sem conclusão") {
     trigger = "Alta frequência de navegação sem submissão de proposta detectada";
     action = "Convite para sessão de orientação com especialista Petronect";
     execution = "Identificamos que você navega com frequência pelo Portal mas ainda não submeteu uma proposta. Podemos agendar uma sessão de orientação com nossa equipe técnica?";
   } else if (user.behavior === "Alta interação + abandono") {
-    trigger = "Abandono após início de proposta comercial — comportamento de alta intenção";
+    trigger = "Abandono após início de proposta comercial, comportamento de alta intenção";
     action = "Contato prioritário com link direto de retomada da proposta";
-    execution = "Olá! Notamos que você iniciou uma proposta no Portal mas não concluiu. Nossa equipe pode ajudar — retome de onde parou.";
+    execution = "Olá! Notamos que você iniciou uma proposta no Portal mas não concluiu. Nossa equipe pode ajudar, retome de onde parou.";
   }
 
   const abandonEvent = user.events.find((e) => e.type === "Abandono");
   const abandonedAt = abandonEvent
-    ? abandonEvent.detail.replace(/^Abandonou /, "").split(" — ")[0]
+    ? abandonEvent.detail.split(", ")[0]
     : null;
 
   let channel, channelLevel;
   if (user.score >= 85 || user.prazoUrgente) {
-    channel = "Ligação direta — gestor comercial";
+    channel = "Ligação direta, gestor comercial";
     channelLevel = "Urgente";
   } else if (user.score >= 70) {
     channel = "WhatsApp Business + link de retomada";
@@ -323,9 +323,9 @@ function applyReengagementEngine(user) {
   const steps = [
     { delay: "T+0h",  label: "Notificação no Portal Petronect",                                                                   done: true },
     { delay: "T+4h",  label: "E-mail com link direto para retomar a proposta",                                                     done: true },
-    { delay: "T+16h", label: hasFieldError ? "Sala de Colaboração — apoio técnico no preenchimento da proposta" : "Mensagem via Sala de Colaboração do edital", done: user.score >= 50 },
+    { delay: "T+16h", label: hasFieldError ? "Sala de Colaboração, apoio técnico no preenchimento da proposta" : "Mensagem via Sala de Colaboração do edital", done: user.score >= 50 },
     { delay: "T+24h", label: user.score >= 70 ? "WhatsApp Business com urgência" : "Segundo e-mail + guia de apoio ao usuário",    done: user.score >= 70 },
-    { delay: "T+48h", label: "Ligação direta — gestor comercial Petronect",                                                        done: !!(user.score >= 85 || user.prazoUrgente) },
+    { delay: "T+48h", label: "Ligação direta, gestor comercial Petronect",                                                        done: !!(user.score >= 85 || user.prazoUrgente) },
   ];
 
   return {
@@ -965,63 +965,48 @@ function UsersPage({
 
       <div className="users-grid">
         {filteredUsers.map((user) => (
-          <div className="flip-wrap" key={user.id}>
-            <div className="flip-inner">
-              {/* Frente */}
-              <article className={`user-card flip-front user-card-priority-${user.priority}`}>
-                <div className="user-card-top">
-                  <div className={`company-avatar large avatar-priority-${user.priority}`}>
-                    {user.name[0].toUpperCase()}
-                  </div>
-                  <PriorityBadge priority={user.priority} />
-                </div>
-                <h3>{user.name}</h3>
-                <span className="user-type-label">{user.type}</span>
-                <div className="user-card-behavior">{user.behavior}</div>
-                <div className="user-card-stats">
-                  <div>
-                    <span>Score</span>
-                    <strong>{user.score}</strong>
-                  </div>
-                  <div>
-                    <span>Interações</span>
-                    <strong>{user.interactions}</strong>
-                  </div>
-                </div>
-                <div className="user-card-automation">
-                  <span>Automação</span>
-                  <AutomationBadge automation={user.automation} />
-                </div>
-                <span className="flip-hint">passe o mouse para mais detalhes</span>
-              </article>
-              {/* Verso */}
-              <article className={`user-card flip-back user-card-priority-${user.priority}`}>
-                <div className="flip-back-header">
-                  <div className={`company-avatar large avatar-priority-${user.priority}`}>
-                    {user.name[0].toUpperCase()}
-                  </div>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: 17 }}>{user.name}</h3>
-                    <span className="user-type-label">{user.type}</span>
-                  </div>
-                </div>
-                <div className="flip-back-score">
-                  <ScoreRing score={user.score} />
-                  <div className="flip-score-label">
-                    <span>Comportamento</span>
-                    <strong>{user.behavior}</strong>
-                  </div>
-                </div>
-                <div className="flip-back-automation">
-                  <span>Status de automação</span>
-                  <AutomationBadge automation={user.automation} />
-                </div>
-                <button className="card-button flip-cta" onClick={() => onSelectUser(user)}>
-                  Ver análise completa →
-                </button>
-              </article>
+          <article
+            key={user.id}
+            className={`user-card user-card-priority-${user.priority}`}
+            onClick={() => onSelectUser(user)}
+          >
+            <div className="user-card-top">
+              <div className={`company-avatar large avatar-priority-${user.priority}`}>
+                {user.name[0].toUpperCase()}
+              </div>
+              <PriorityBadge priority={user.priority} />
             </div>
-          </div>
+
+            <h3>{user.name}</h3>
+            <span className="user-type-label">{user.type}</span>
+
+            <div className="user-card-behavior">{user.behavior}</div>
+
+            <div className="user-card-score-bar">
+              <div className="user-card-score-track">
+                <div
+                  className="user-card-score-fill"
+                  style={{
+                    width: `${user.score}%`,
+                    background: user.score >= 70 ? "#d85b5b" : user.score >= 40 ? "#d7a633" : "#8d9aad",
+                  }}
+                />
+              </div>
+              <span>Score <strong>{user.score}</strong></span>
+            </div>
+
+            <div className="user-card-footer">
+              <div className="user-card-stat">
+                <span>Interações</span>
+                <strong>{user.interactions}</strong>
+              </div>
+              <div className="user-card-automation-inline">
+                <AutomationBadge automation={user.automation} />
+              </div>
+            </div>
+
+            <div className="user-card-cta">Ver análise completa →</div>
+          </article>
         ))}
       </div>
     </section>
@@ -1091,7 +1076,7 @@ function AutomationsPage({
         <div className="page-hero" style={{ marginBottom: 0 }}>
           <span className="eyebrow">CENTRAL DE AUTOMAÇÕES</span>
           <h1>Reengajamentos ativos</h1>
-          <p>Fornecedores acionados automaticamente — organizados por oportunidade, com canal e urgência definidos pelo comportamento no Portal.</p>
+          <p>Fornecedores acionados automaticamente, organizados por oportunidade, com canal e urgência definidos pelo comportamento no Portal.</p>
         </div>
         <div className="automations-band-stats">
           <div>
@@ -2989,104 +2974,83 @@ function App() {
           text-align: left;
         }
 
-        /* ── Flip card ── */
-        .flip-wrap {
-          perspective: 1200px;
-          height: 370px;
+        /* ── User card redesign ── */
+        .user-card {
+          display: flex;
+          flex-direction: column;
+          cursor: pointer;
+          transition: transform .18s, box-shadow .18s;
         }
 
-        .flip-inner {
-          position: relative;
-          width: 100%;
-          height: 100%;
-          transform-style: preserve-3d;
-          transition: transform 0.55s cubic-bezier(.4,0,.2,1);
+        .user-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 8px 32px rgba(41,72,143,.13);
         }
 
-        .flip-wrap:hover .flip-inner {
-          transform: rotateY(180deg);
+        .user-card-score-bar {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin: 4px 0 16px;
         }
 
-        .flip-front,
-        .flip-back {
-          position: absolute;
-          inset: 0;
-          backface-visibility: hidden;
-          -webkit-backface-visibility: hidden;
+        .user-card-score-track {
+          flex: 1;
+          height: 5px;
+          border-radius: 99px;
+          background: var(--border);
           overflow: hidden;
         }
 
-        .flip-back {
-          transform: rotateY(180deg);
-        }
-
-        .flip-front.user-card,
-        .flip-back.user-card {
+        .user-card-score-fill {
           height: 100%;
-          box-sizing: border-box;
-          display: flex;
-          flex-direction: column;
-          margin: 0;
+          border-radius: 99px;
+          transition: width .4s;
         }
 
-        .flip-hint {
-          margin-top: auto;
-          padding-top: 10px;
-          font-size: 10px;
+        .user-card-score-bar > span {
+          font-size: 11px;
           color: var(--muted);
-          text-align: center;
-          letter-spacing: .03em;
+          white-space: nowrap;
         }
 
-        .flip-back-header {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 18px;
-        }
-
-        .flip-back-score {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          padding: 16px 0;
-          border-top: 1px solid var(--border);
-          border-bottom: 1px solid var(--border);
-          margin-bottom: 16px;
-        }
-
-        .flip-score-label {
-          flex: 1;
-        }
-
-        .flip-score-label span {
-          display: block;
-          font-size: 10px;
-          color: var(--muted);
-          margin-bottom: 5px;
-        }
-
-        .flip-score-label strong {
+        .user-card-score-bar > span strong {
+          color: var(--text-primary);
           font-size: 13px;
-          line-height: 1.4;
         }
 
-        .flip-back-automation {
+        .user-card-footer {
           display: flex;
           align-items: center;
           justify-content: space-between;
+          padding-top: 14px;
+          border-top: 1px solid var(--border);
+          margin-top: auto;
           gap: 8px;
         }
 
-        .flip-back-automation > span {
-          font-size: 11px;
+        .user-card-stat span {
+          display: block;
+          font-size: 10px;
           color: var(--muted);
         }
 
-        .flip-cta {
-          margin-top: auto !important;
-          padding-top: 14px !important;
-          border-top: 1px solid var(--border) !important;
+        .user-card-stat strong {
+          font-size: 18px;
+          font-weight: 800;
+        }
+
+        .user-card-automation-inline {
+          flex-shrink: 0;
+        }
+
+        .user-card-cta {
+          margin-top: 14px;
+          padding-top: 12px;
+          border-top: 1px solid var(--border);
+          font-size: 13px;
+          font-weight: 750;
+          color: var(--blue);
         }
 
         /* ── Journey Stepper ── */
