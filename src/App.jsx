@@ -3878,6 +3878,20 @@ function App() {
           flex-direction: column;
         }
 
+        .profile-main {
+          align-items: flex-start;
+        }
+
+        .profile-main h1 {
+          font-size: clamp(22px, 3vw, 36px);
+          line-height: 1.15;
+        }
+
+        .company-avatar.profile {
+          margin-top: 4px;
+          flex-shrink: 0;
+        }
+
         .marker-abandon {
           background: #d85b5b !important;
           box-shadow: 0 0 0 4px rgba(216,91,91,.18) !important;
