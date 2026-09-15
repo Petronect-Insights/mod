@@ -68,9 +68,6 @@ const baseUsers = [
       { time: "08:40", type: "Visualização", detail: "Visualizou edital nº 4600201345", phase: "before" },
       { time: "08:48", type: "Início de jornada", detail: "Iniciou envio de proposta técnica", phase: "before" },
       { time: "08:55", type: "Abandono", detail: "Abandonou envio — erro no preenchimento de campos obrigatórios", phase: "before" },
-      { time: "09:22", type: "Login", detail: "Retornou após orientação da equipe Petronect", phase: "after" },
-      { time: "09:27", type: "Retomada de jornada", detail: "Corrigiu campos e retomou envio da proposta", phase: "after" },
-      { time: "09:35", type: "Conclusão", detail: "Proposta técnica submetida com sucesso", phase: "after" },
     ],
     followUpTemplate: [
       { time: "09:22", type: "Login", detail: "Retornou ao Portal após o reengajamento", phase: "after" },
@@ -928,13 +925,6 @@ function UsersPage({
 
   return (
     <section className="page-section">
-      <button
-        className="back-button"
-        onClick={onBack}
-      >
-        ← Voltar
-      </button>
-
       <div className="page-hero">
         <span className="eyebrow">USUÁRIOS</span>
         <h1>Visão comportamental</h1>
@@ -970,52 +960,63 @@ function UsersPage({
 
       <div className="users-grid">
         {filteredUsers.map((user) => (
-          <article className={`user-card user-card-priority-${user.priority}`} key={user.id}>
-            <div className="user-card-top">
-              <div className="company-avatar large">
-                {user.name[0].toUpperCase()}
-              </div>
-
-              <PriorityBadge priority={user.priority} />
+          <div className="flip-wrap" key={user.id}>
+            <div className="flip-inner">
+              {/* Frente */}
+              <article className={`user-card flip-front user-card-priority-${user.priority}`}>
+                <div className="user-card-top">
+                  <div className={`company-avatar large avatar-priority-${user.priority}`}>
+                    {user.name[0].toUpperCase()}
+                  </div>
+                  <PriorityBadge priority={user.priority} />
+                </div>
+                <h3>{user.name}</h3>
+                <span className="user-type-label">{user.type}</span>
+                <div className="user-card-behavior">{user.behavior}</div>
+                <div className="user-card-stats">
+                  <div>
+                    <span>Score</span>
+                    <strong>{user.score}</strong>
+                  </div>
+                  <div>
+                    <span>Interações</span>
+                    <strong>{user.interactions}</strong>
+                  </div>
+                </div>
+                <div className="user-card-automation">
+                  <span>Automação</span>
+                  <AutomationBadge automation={user.automation} />
+                </div>
+                <span className="flip-hint">passe o mouse para mais detalhes</span>
+              </article>
+              {/* Verso */}
+              <article className={`user-card flip-back user-card-priority-${user.priority}`}>
+                <div className="flip-back-header">
+                  <div className={`company-avatar large avatar-priority-${user.priority}`}>
+                    {user.name[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 17 }}>{user.name}</h3>
+                    <span className="user-type-label">{user.type}</span>
+                  </div>
+                </div>
+                <div className="flip-back-score">
+                  <ScoreRing score={user.score} />
+                  <div className="flip-score-label">
+                    <span>Comportamento</span>
+                    <strong>{user.behavior}</strong>
+                  </div>
+                </div>
+                <div className="flip-back-automation">
+                  <span>Status de automação</span>
+                  <AutomationBadge automation={user.automation} />
+                </div>
+                <button className="card-button flip-cta" onClick={() => onSelectUser(user)}>
+                  Ver análise completa →
+                </button>
+              </article>
             </div>
-
-            <h3>{user.name}</h3>
-
-            <span className="user-type-label">
-              {user.type}
-            </span>
-
-            <div className="user-card-behavior">
-              {user.behavior}
-            </div>
-
-            <div className="user-card-stats">
-              <div>
-                <span>Score</span>
-                <strong>{user.score}</strong>
-              </div>
-
-              <div>
-                <span>Interações</span>
-                <strong>{user.interactions}</strong>
-              </div>
-            </div>
-
-            <div className="user-card-automation">
-              <span>Automação</span>
-
-              <AutomationBadge
-                automation={user.automation}
-              />
-            </div>
-
-            <button
-              className="card-button"
-              onClick={() => onSelectUser(user)}
-            >
-              Ver análise completa →
-            </button>
-          </article>
+          </div>
         ))}
       </div>
     </section>
@@ -1081,13 +1082,6 @@ function AutomationsPage({
 
   return (
     <section className="page-section">
-      <button
-        className="back-button"
-        onClick={onBack}
-      >
-        ← Voltar
-      </button>
-
       <div className="automations-band">
         <div className="page-hero" style={{ marginBottom: 0 }}>
           <span className="eyebrow">CENTRAL DE AUTOMAÇÕES</span>
@@ -1239,13 +1233,6 @@ function UserDetails({
 
   return (
     <section className="page-section">
-      <button
-        className="back-button"
-        onClick={onBack}
-      >
-        ← Voltar
-      </button>
-
       <div className={`profile-header profile-header-${user.priority}`}>
         <div className="profile-main">
           <div className={`company-avatar profile avatar-priority-${user.priority}`}>
@@ -1479,22 +1466,12 @@ function AutomationPage({
           de acionamento automático.
         </p>
 
-        <button onClick={onBack}>
-          ← Voltar
-        </button>
       </section>
     );
   }
 
   return (
     <section className="page-section">
-      <button
-        className="back-button"
-        onClick={onBack}
-      >
-        ← Voltar
-      </button>
-
       <div className="automation-hero">
         <div className="automation-orb">
           ◎
@@ -2927,8 +2904,6 @@ function App() {
         }
 
         .user-card-automation {
-          min-height: 54px;
-
           padding-top: 16px;
 
           display: flex;
@@ -2941,7 +2916,7 @@ function App() {
         .card-button {
           width: 100%;
 
-          padding: 18px 0 0;
+          padding: 14px 0 0;
 
           border: 0;
           background: none;
@@ -2951,6 +2926,106 @@ function App() {
           font-weight: 750;
 
           text-align: left;
+        }
+
+        /* ── Flip card ── */
+        .flip-wrap {
+          perspective: 1200px;
+          height: 370px;
+        }
+
+        .flip-inner {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          transform-style: preserve-3d;
+          transition: transform 0.55s cubic-bezier(.4,0,.2,1);
+        }
+
+        .flip-wrap:hover .flip-inner {
+          transform: rotateY(180deg);
+        }
+
+        .flip-front,
+        .flip-back {
+          position: absolute;
+          inset: 0;
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+          overflow: hidden;
+        }
+
+        .flip-back {
+          transform: rotateY(180deg);
+        }
+
+        .flip-front.user-card,
+        .flip-back.user-card {
+          height: 100%;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          margin: 0;
+        }
+
+        .flip-hint {
+          margin-top: auto;
+          padding-top: 10px;
+          font-size: 10px;
+          color: var(--muted);
+          text-align: center;
+          letter-spacing: .03em;
+        }
+
+        .flip-back-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 18px;
+        }
+
+        .flip-back-score {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 16px 0;
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+          margin-bottom: 16px;
+        }
+
+        .flip-score-label {
+          flex: 1;
+        }
+
+        .flip-score-label span {
+          display: block;
+          font-size: 10px;
+          color: var(--muted);
+          margin-bottom: 5px;
+        }
+
+        .flip-score-label strong {
+          font-size: 13px;
+          line-height: 1.4;
+        }
+
+        .flip-back-automation {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+
+        .flip-back-automation > span {
+          font-size: 11px;
+          color: var(--muted);
+        }
+
+        .flip-cta {
+          margin-top: auto !important;
+          padding-top: 14px !important;
+          border-top: 1px solid var(--border) !important;
         }
 
         .automation-summary-grid {
@@ -2994,22 +3069,22 @@ function App() {
         }
 
         .automation-list-card {
-          padding: 20px;
+          padding: 20px 24px;
 
           border-radius: 23px;
 
           display: grid;
 
           grid-template-columns:
-            1.3fr
-            .45fr
-            .75fr
-            .9fr
+            minmax(180px, 1.5fr)
+            80px
+            minmax(110px, .9fr)
+            minmax(110px, .9fr)
             auto;
 
           align-items: center;
 
-          gap: 20px;
+          gap: 16px;
         }
 
         .automation-list-main {
@@ -3017,6 +3092,18 @@ function App() {
           align-items: center;
 
           gap: 13px;
+          min-width: 0;
+        }
+
+        .automation-list-main > div {
+          min-width: 0;
+        }
+
+        .automation-list-main strong {
+          display: block;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .automation-list-main strong,
@@ -3500,6 +3587,7 @@ function App() {
           max-width: 820px;
 
           margin: 0 auto 40px;
+          padding-top: 28px;
 
           text-align: center;
         }
