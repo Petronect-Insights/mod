@@ -372,10 +372,6 @@ function getRoute() {
     return { page: "automations", userId: null };
   }
 
-  if (hash === "#/atencao") {
-    return { page: "atencao", userId: null };
-  }
-
   if (hash.startsWith("#/automation/")) {
     return {
       page: "automation",
@@ -500,14 +496,6 @@ function Header({
             onClick={goUsers}
           >
             Usuários
-          </button>
-
-          <button
-            className={page === "atencao" ? "nav-active nav-atencao-active" : "nav-atencao"}
-            onClick={goAtencao}
-          >
-            <span className="nav-atencao-dot" />
-            Em Atenção
           </button>
 
           <button
@@ -1258,84 +1246,145 @@ function UsersPage({
    CENTRAL DE AUTOMAÇÕES
 ========================================================= */
 
+const ACOES_CONFIG = {
+  email:   { label: "Disparar e-mail",       done: "E-mail enviado",    type: "success" },
+  sala:    { label: "Sala de Colaboração",   done: "Mensagem enviada",  type: "success" },
+  ligacao: { label: "Acionar ligação",        done: "Equipe acionada",   type: "alert"   },
+  whats:   { label: "WhatsApp Business",      done: "Mensagem enviada",  type: "success" },
+};
+
+function AcaoBtn({ userId, acao, fired, onFire, variant = "primary" }) {
+  const cfg = ACOES_CONFIG[acao];
+  const key = userId + acao;
+  const isDone = !!fired[key];
+  return (
+    <button
+      className={`aa-btn aa-btn-${variant}${isDone ? " aa-btn-done" : ""}`}
+      onClick={(e) => { e.stopPropagation(); onFire(userId, acao); }}
+    >
+      {isDone ? cfg.done : cfg.label}
+    </button>
+  );
+}
+
 function AutomationsPage({
   users,
   onBack,
   openAutomation,
+  addToast,
 }) {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] =
-    useState("Todos");
+  const [statusFilter, setStatusFilter] = useState("Todos");
+  const [fired, setFired] = useState({});
 
-  const activeUsers = users.filter(
-    (user) => user.automation.active
+  function fireAction(userId, acao) {
+    const key = userId + acao;
+    if (fired[key]) return;
+    setFired((prev) => ({ ...prev, [key]: true }));
+    const cfg = ACOES_CONFIG[acao];
+    const user = users.find((u) => u.id === userId);
+    addToast(cfg.done, user?.name || "", cfg.type);
+    setTimeout(() => setFired((prev) => { const c = { ...prev }; delete c[key]; return c; }), 3000);
+  }
+
+  const activeUsers = users.filter((user) => user.automation.active);
+
+  const manualUsers = users.filter(
+    (u) => (u.signal === "Crítico" || u.signal === "Atenção") &&
+            u.abandoned && !u.automation.completed
   );
 
   const filtered = activeUsers.filter((user) => {
-    const searchOk = user.name
-      .toLowerCase()
-      .includes(search.toLowerCase());
-
+    const searchOk = user.name.toLowerCase().includes(search.toLowerCase());
     let statusOk = true;
-
-    if (statusFilter === "Aguardando") {
-      statusOk =
-        !user.automation.returned &&
-        !user.automation.completed;
-    }
-
-    if (statusFilter === "Em andamento") {
-      statusOk =
-        user.automation.returned &&
-        !user.automation.completed;
-    }
-
-    if (statusFilter === "Concluído") {
-      statusOk = user.automation.completed;
-    }
-
+    if (statusFilter === "Aguardando")   statusOk = !user.automation.returned && !user.automation.completed;
+    if (statusFilter === "Em andamento") statusOk = user.automation.returned && !user.automation.completed;
+    if (statusFilter === "Concluído")    statusOk = user.automation.completed;
     return searchOk && statusOk;
   });
 
-  const waiting = activeUsers.filter(
-    (user) => !user.automation.returned
-  ).length;
-
-  const progress = activeUsers.filter(
-    (user) =>
-      user.automation.returned &&
-      !user.automation.completed
-  ).length;
-
-  const completed = activeUsers.filter(
-    (user) => user.automation.completed
-  ).length;
+  const waiting   = activeUsers.filter((u) => !u.automation.returned).length;
+  const progress  = activeUsers.filter((u) => u.automation.returned && !u.automation.completed).length;
+  const completed = activeUsers.filter((u) => u.automation.completed).length;
 
   return (
     <section className="page-section">
+
+      {/* ── Seção: Requer ação manual ── */}
+      {manualUsers.length > 0 && (
+        <div className="manual-section">
+          <div className="manual-section-header">
+            <div>
+              <span className="manual-badge">
+                <span className="manual-badge-dot" />
+                {manualUsers.length} caso{manualUsers.length !== 1 ? "s" : ""} crítico{manualUsers.length !== 1 ? "s" : ""}
+              </span>
+              <h2 className="manual-title">Requer ação manual</h2>
+              <p className="manual-subtitle">Motor acionou — fornecedores ainda sem resposta. Intervenção humana recomendada.</p>
+            </div>
+          </div>
+
+          <div className="manual-cards">
+            {manualUsers.map((user) => (
+              <div
+                key={user.id}
+                className={`manual-card manual-card-${user.signal === "Crítico" ? "critico" : "atencao"}`}
+                onClick={() => openAutomation(user)}
+              >
+                <div className="manual-card-top">
+                  <div className="manual-card-identity">
+                    <div className={`company-avatar avatar-priority-${user.priority}`} style={{width:44,height:44,fontSize:17,flexShrink:0}}>
+                      {user.name[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <strong className="manual-card-name">{user.name}</strong>
+                      <span className="manual-card-behavior">{user.behavior}</span>
+                    </div>
+                  </div>
+                  <div className="manual-card-meta">
+                    <SignalBadge signal={user.signal} />
+                    {user.prazo && (
+                      <span className={`manual-prazo${user.prazoUrgente ? " manual-prazo-urgente" : ""}`}>
+                        Prazo: {user.prazo}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="manual-card-actions" onClick={(e) => e.stopPropagation()}>
+                  <AcaoBtn userId={user.id} acao="email"   fired={fired} onFire={fireAction} variant="primary" />
+                  <AcaoBtn userId={user.id} acao="sala"    fired={fired} onFire={fireAction} variant="secondary" />
+                  {user.signal === "Crítico" && (
+                    <AcaoBtn userId={user.id} acao="ligacao" fired={fired} onFire={fireAction} variant="danger" />
+                  )}
+                  {user.prazoUrgente && (
+                    <AcaoBtn userId={user.id} acao="whats" fired={fired} onFire={fireAction} variant="secondary" />
+                  )}
+                  <button
+                    className="aa-btn aa-btn-ghost"
+                    onClick={(e) => { e.stopPropagation(); openAutomation(user); }}
+                  >
+                    Ver análise completa →
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Seção: Motor ativo ── */}
       <div className="automations-band">
         <div className="page-hero" style={{ marginBottom: 0 }}>
-          <span className="eyebrow">CENTRAL DE AUTOMAÇÕES</span>
-          <h1>Reengajamentos ativos</h1>
-          <p>Fornecedores acionados automaticamente, organizados por oportunidade, com canal e urgência definidos pelo comportamento no Portal.</p>
+          <span className="eyebrow">MOTOR DE REENGAJAMENTO</span>
+          <h1>Automações ativas</h1>
+          <p>Fornecedores acionados automaticamente, com canal e urgência definidos pelo comportamento no Portal.</p>
         </div>
         <div className="automations-band-stats">
-          <div>
-            <strong>{activeUsers.length}</strong>
-            <span>acionados</span>
-          </div>
-          <div>
-            <strong>{waiting}</strong>
-            <span>aguardando</span>
-          </div>
-          <div>
-            <strong>{progress}</strong>
-            <span>em andamento</span>
-          </div>
-          <div>
-            <strong>{completed}</strong>
-            <span>concluídos</span>
-          </div>
+          <div><strong>{activeUsers.length}</strong><span>acionados</span></div>
+          <div><strong>{waiting}</strong><span>aguardando</span></div>
+          <div><strong>{progress}</strong><span>em andamento</span></div>
+          <div><strong>{completed}</strong><span>concluídos</span></div>
         </div>
       </div>
 
@@ -1361,70 +1410,44 @@ function AutomationsPage({
           ))}
         </div>
         <span className="result-tally">
-          <strong>{filtered.length}</strong> reengajamento{filtered.length !== 1 ? "s" : ""}
+          <strong>{filtered.length}</strong> automação{filtered.length !== 1 ? "ões" : ""}
         </span>
       </div>
 
       <div className="automation-list">
         {filtered.map((user) => (
-          <article
-            className="automation-list-card"
-            key={user.id}
-          >
+          <article className="automation-list-card" key={user.id}>
             <div className="automation-list-main">
-              <div className="company-avatar">
-                {user.name[0].toUpperCase()}
-              </div>
-
+              <div className="company-avatar">{user.name[0].toUpperCase()}</div>
               <div>
                 <strong>{user.name}</strong>
-
                 <span>{user.behavior}</span>
               </div>
             </div>
-
             <div className="automation-list-info">
-              <span>Score</span>
-              <strong>{user.score}</strong>
+              <span>Sinal</span>
+              <SignalBadge signal={user.signal} />
             </div>
-
             <div className="automation-list-info">
               <span>Status</span>
-
-              <AutomationBadge
-                automation={user.automation}
-              />
+              <AutomationBadge automation={user.automation} />
             </div>
-
             <div className="automation-list-info">
               <span>Resultado</span>
-
               <strong>
-                {user.automation.completed
-                  ? "Concluiu"
-                  : user.automation.continued
-                    ? "Retomou jornada"
-                    : user.automation.returned
-                      ? "Retornou"
-                      : "Aguardando"}
+                {user.automation.completed ? "Concluiu"
+                  : user.automation.continued ? "Retomou jornada"
+                  : user.automation.returned  ? "Retornou"
+                  : "Aguardando"}
               </strong>
             </div>
-
-            <button
-              className="details-button"
-              onClick={() =>
-                openAutomation(user)
-              }
-            >
+            <button className="details-button" onClick={() => openAutomation(user)}>
               Acompanhar →
             </button>
           </article>
         ))}
-
         {filtered.length === 0 && (
-          <div className="no-results">
-            Nenhuma automação encontrada.
-          </div>
+          <div className="no-results">Nenhuma automação encontrada.</div>
         )}
       </div>
     </section>
@@ -2127,11 +2150,20 @@ function App() {
       `#/automation/${encodeURIComponent(user.id)}`;
   }
 
+  const [toasts, setToasts] = useState([]);
+
+  function addToast(title, message, type = "success") {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, title, message, type }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500);
+  }
+
   function simulateFollowUp(user) {
     setSimulatedEvents((current) => ({
       ...current,
       [user.id]: user.followUpTemplate,
     }));
+    addToast("Automação ativada", user.name, "success");
   }
 
   function resetFollowUp(user) {
@@ -4956,23 +4988,188 @@ function App() {
           line-height: 1.6;
         }
 
-        /* ── Nav: botão Em Atenção ── */
-        .nav-atencao { position: relative; }
-        .nav-atencao-dot {
-          display: inline-block;
-          width: 6px;
-          height: 6px;
-          background: #d85b5b;
+        /* ── Toast ── */
+        .toast-container {
+          position: fixed;
+          bottom: 28px;
+          right: 28px;
+          z-index: 9999;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          pointer-events: none;
+        }
+        .toast {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 14px 18px;
+          border-radius: 14px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          box-shadow: 0 8px 32px rgba(0,0,0,.14);
+          min-width: 240px;
+          max-width: 320px;
+          animation: toastIn .25s ease;
+        }
+        @keyframes toastIn {
+          from { opacity: 0; transform: translateY(12px) scale(.97); }
+          to   { opacity: 1; transform: none; }
+        }
+        .toast-dot {
+          width: 9px;
+          height: 9px;
           border-radius: 50%;
-          margin-right: 5px;
-          vertical-align: middle;
-          animation: pulseDot 1.8s ease-in-out infinite;
+          flex-shrink: 0;
+          margin-top: 3px;
+        }
+        .toast-success .toast-dot { background: #71bf44; }
+        .toast-alert   .toast-dot { background: #d85b5b; }
+        .toast-body { display: flex; flex-direction: column; gap: 2px; }
+        .toast-body strong { font-size: 13px; font-weight: 700; }
+        .toast-body span   { font-size: 12px; color: var(--muted); }
+
+        /* ── Seção "Requer ação manual" ── */
+        .manual-section {
+          margin-bottom: 32px;
+        }
+        .manual-section-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          margin-bottom: 16px;
+        }
+        .manual-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 12px;
+          border-radius: 999px;
+          background: rgba(216,91,91,.1);
+          color: #b53636;
+          font-size: 11px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: .06em;
+          margin-bottom: 8px;
+        }
+        .manual-badge-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #d85b5b;
+          animation: pulseDot 1.6s ease-in-out infinite;
         }
         @keyframes pulseDot {
           0%,100% { opacity: 1; transform: scale(1); }
-          50%      { opacity: .55; transform: scale(.7); }
+          50%      { opacity: .5; transform: scale(.7); }
         }
-        .nav-atencao-active .nav-atencao-dot { background: white; }
+        .manual-title {
+          margin: 0 0 4px;
+          font-size: clamp(18px, 2.5vw, 24px);
+          letter-spacing: -.03em;
+        }
+        .manual-subtitle {
+          margin: 0;
+          font-size: 13px;
+          color: var(--text-secondary);
+        }
+        .manual-cards {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .manual-card {
+          border-radius: 18px;
+          border: 1px solid var(--border);
+          background: var(--surface);
+          box-shadow: var(--shadow);
+          padding: 20px 24px;
+          cursor: pointer;
+          transition: box-shadow .2s, transform .15s;
+        }
+        .manual-card:hover {
+          box-shadow: 0 18px 48px rgba(0,0,0,.12);
+          transform: translateY(-1px);
+        }
+        .manual-card-critico {
+          border-left: 4px solid #d85b5b;
+        }
+        .manual-card-atencao {
+          border-left: 4px solid #d7a633;
+        }
+        .manual-card-top {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 16px;
+          flex-wrap: wrap;
+        }
+        .manual-card-identity {
+          display: flex;
+          align-items: center;
+          gap: 13px;
+        }
+        .manual-card-name {
+          display: block;
+          font-size: 15px;
+          font-weight: 700;
+        }
+        .manual-card-behavior {
+          display: block;
+          margin-top: 3px;
+          font-size: 12px;
+          color: var(--muted);
+        }
+        .manual-card-meta {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+        .manual-prazo {
+          font-size: 12px;
+          color: var(--muted);
+          font-weight: 600;
+        }
+        .manual-prazo-urgente {
+          color: #b53636;
+          font-weight: 750;
+        }
+        .manual-card-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          padding-top: 16px;
+          border-top: 1px solid var(--border);
+        }
+
+        /* ── Botões de ação rápida ── */
+        .aa-btn {
+          padding: 9px 16px;
+          border: none;
+          border-radius: 10px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: opacity .15s, transform .1s;
+          white-space: nowrap;
+        }
+        .aa-btn:hover  { opacity: .85; }
+        .aa-btn:active { transform: scale(.97); }
+
+        .aa-btn-primary   { background: var(--blue);  color: white; }
+        .aa-btn-secondary { background: rgba(41,72,143,.1); color: var(--blue); }
+        .aa-btn-danger    { background: rgba(216,91,91,.12); color: #b53636; }
+        .aa-btn-ghost     { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+        .aa-btn-done {
+          background: rgba(113,191,68,.15) !important;
+          color: #4f9130 !important;
+          pointer-events: none;
+        }
 
         /* ── AtencaoPage ── */
         .atencao-page {
@@ -5235,13 +5432,6 @@ function App() {
           />
         )}
 
-        {route.page === "atencao" && (
-          <AtencaoPage
-            users={analyzedUsers}
-            onSelectUser={openUser}
-          />
-        )}
-
         {route.page === "users" && (
           <UsersPage
             users={analyzedUsers}
@@ -5255,6 +5445,7 @@ function App() {
             users={analyzedUsers}
             onBack={goBack}
             openAutomation={openAutomation}
+            addToast={addToast}
           />
         )}
 
@@ -5275,6 +5466,7 @@ function App() {
           />
         )}
       </main>
+      <ToastContainer toasts={toasts} />
     </div>
   );
 }
