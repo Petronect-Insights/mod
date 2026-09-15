@@ -901,45 +901,37 @@ function UsersPage({
         ← Voltar
       </button>
 
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">USUÁRIOS</span>
-
-          <h1>Visão comportamental</h1>
-
-          <p>
-            Explore os usuários analisados, seus comportamentos
-            e prioridades.
-          </p>
-        </div>
-
-        <div className="result-count">
-          <strong>{filteredUsers.length}</strong>
-          <span>resultados</span>
-        </div>
+      <div className="page-hero">
+        <span className="eyebrow">USUÁRIOS</span>
+        <h1>Visão comportamental</h1>
+        <p>Explore os fornecedores analisados, seus comportamentos e prioridades de reengajamento.</p>
       </div>
 
-      <div className="filters">
+      <div className="search-wrap">
+        <span className="search-icon-char">⌕</span>
         <input
           type="text"
           placeholder="Buscar empresa ou comportamento..."
           value={search}
-          onChange={(event) =>
-            setSearch(event.target.value)
-          }
+          onChange={(event) => setSearch(event.target.value)}
         />
+      </div>
 
-        <select
-          value={priorityFilter}
-          onChange={(event) =>
-            setPriorityFilter(event.target.value)
-          }
-        >
-          <option>Todas</option>
-          <option>Alta</option>
-          <option>Média</option>
-          <option>Baixa</option>
-        </select>
+      <div className="filter-row">
+        <div className="priority-pills">
+          {["Todas", "Alta", "Média", "Baixa"].map((p) => (
+            <button
+              key={p}
+              className={`priority-pill priority-pill-${p}${priorityFilter === p ? " pill-active" : ""}`}
+              onClick={() => setPriorityFilter(p)}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+        <span className="result-tally">
+          <strong>{filteredUsers.length}</strong> fornecedores
+        </span>
       </div>
 
       <div className="users-grid">
@@ -1062,54 +1054,56 @@ function AutomationsPage({
         ← Voltar
       </button>
 
-      <div className="page-hero">
-        <span className="eyebrow">CENTRAL DE AUTOMAÇÕES</span>
-        <h1>Reengajamentos</h1>
-        <p>Acompanhe os usuários acionados automaticamente pelo Petronect Insights.</p>
+      <div className="automations-band">
+        <div className="page-hero" style={{ marginBottom: 0 }}>
+          <span className="eyebrow">CENTRAL DE AUTOMAÇÕES</span>
+          <h1>Reengajamentos</h1>
+          <p>Acompanhe em tempo real os fornecedores acionados automaticamente pelo motor comportamental.</p>
+        </div>
+        <div className="automations-band-stats">
+          <div>
+            <strong>{activeUsers.length}</strong>
+            <span>acionados</span>
+          </div>
+          <div>
+            <strong>{waiting}</strong>
+            <span>aguardando</span>
+          </div>
+          <div>
+            <strong>{progress}</strong>
+            <span>em andamento</span>
+          </div>
+          <div>
+            <strong>{completed}</strong>
+            <span>concluídos</span>
+          </div>
+        </div>
       </div>
 
-      <section className="automation-summary-grid">
-        <div>
-          <span>Total acionados</span>
-          <strong>{activeUsers.length}</strong>
-        </div>
-
-        <div>
-          <span>Aguardando retorno</span>
-          <strong>{waiting}</strong>
-        </div>
-
-        <div>
-          <span>Em andamento</span>
-          <strong>{progress}</strong>
-        </div>
-
-        <div>
-          <span>Concluídos</span>
-          <strong>{completed}</strong>
-        </div>
-      </section>
-
-      <div className="filters">
+      <div className="search-wrap" style={{ marginBottom: 16 }}>
+        <span className="search-icon-char">⌕</span>
         <input
           value={search}
           placeholder="Buscar empresa..."
-          onChange={(event) =>
-            setSearch(event.target.value)
-          }
+          onChange={(event) => setSearch(event.target.value)}
         />
+      </div>
 
-        <select
-          value={statusFilter}
-          onChange={(event) =>
-            setStatusFilter(event.target.value)
-          }
-        >
-          <option>Todos</option>
-          <option>Aguardando</option>
-          <option>Em andamento</option>
-          <option>Concluído</option>
-        </select>
+      <div className="filter-row" style={{ marginBottom: 24 }}>
+        <div className="priority-pills">
+          {["Todos", "Aguardando", "Em andamento", "Concluído"].map((s) => (
+            <button
+              key={s}
+              className={`priority-pill${statusFilter === s ? " pill-active" : ""}`}
+              onClick={() => setStatusFilter(s)}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        <span className="result-tally">
+          <strong>{filtered.length}</strong> reengajamento{filtered.length !== 1 ? "s" : ""}
+        </span>
       </div>
 
       <div className="automation-list">
@@ -3994,6 +3988,151 @@ function App() {
 
         .automation-details > div:last-child {
           grid-column: 1 / -1;
+        }
+
+        .search-wrap {
+          position: relative;
+          margin-bottom: 14px;
+        }
+
+        .search-icon-char {
+          position: absolute;
+          left: 17px;
+          top: 50%;
+          transform: translateY(-50%);
+          font-size: 20px;
+          color: var(--muted);
+          pointer-events: none;
+          line-height: 1;
+        }
+
+        .search-wrap input {
+          width: 100%;
+          height: 52px;
+          padding: 0 18px 0 46px;
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          outline: none;
+          background: var(--surface);
+          color: var(--text);
+          font-size: 14px;
+        }
+
+        .search-wrap input::placeholder {
+          color: var(--muted);
+        }
+
+        .filter-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 28px;
+          flex-wrap: wrap;
+        }
+
+        .priority-pills {
+          display: flex;
+          gap: 7px;
+          flex-wrap: wrap;
+        }
+
+        .priority-pill {
+          padding: 9px 18px;
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          background: var(--surface);
+          color: var(--text-secondary);
+          font-size: 13px;
+          font-weight: 650;
+          transition: background .15s, color .15s, border-color .15s;
+        }
+
+        .priority-pill:hover {
+          background: var(--surface-hover);
+        }
+
+        .priority-pill.pill-active {
+          background: var(--blue);
+          color: white;
+          border-color: var(--blue);
+        }
+
+        .priority-pill-Alta.pill-active {
+          background: #ffeaea;
+          color: #b53636;
+          border-color: #d85b5b;
+        }
+
+        .priority-pill-Média.pill-active {
+          background: #fff1bf;
+          color: #8e6200;
+          border-color: #d7a633;
+        }
+
+        .priority-pill-Baixa.pill-active {
+          background: #e9eef4;
+          color: #536174;
+          border-color: #8d9aad;
+        }
+
+        .result-tally {
+          color: var(--muted);
+          font-size: 13px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .result-tally strong {
+          color: var(--text);
+          font-size: 15px;
+        }
+
+        .automations-band {
+          margin-bottom: 32px;
+          padding: 36px 28px 28px;
+          border-radius: 28px;
+          background:
+            radial-gradient(
+              circle at 80% 0%,
+              rgba(41,72,143,.10),
+              transparent 55%
+            ),
+            var(--surface);
+          border: 1px solid var(--border);
+          box-shadow: var(--shadow);
+        }
+
+        .automations-band .page-hero {
+          margin-bottom: 28px;
+        }
+
+        .automations-band-stats {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+          border-top: 1px solid var(--border);
+          padding-top: 22px;
+        }
+
+        .automations-band-stats > div {
+          text-align: center;
+        }
+
+        .automations-band-stats strong {
+          display: block;
+          font-size: 28px;
+          font-weight: 750;
+          letter-spacing: -.04em;
+        }
+
+        .automations-band-stats span {
+          display: block;
+          margin-top: 3px;
+          color: var(--muted);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: .08em;
         }
 
         .chart-toggle {
