@@ -409,10 +409,11 @@ function PriorityBadge({ priority }) {
 }
 
 function SignalBadge({ signal }) {
-  const dot = signal === "Crítico" ? "🔴" : signal === "Atenção" ? "🟡" : "⚪";
+  const cls = signal === "Crítico" ? "signal-Critico" : signal === "Atenção" ? "signal-Atencao" : "signal-Monitoramento";
   return (
-    <span className={`signal-badge signal-${signal?.replace("ã", "a").replace("é", "e")}`}>
-      {dot} {signal}
+    <span className={`signal-badge ${cls}`}>
+      <span className="signal-dot" />
+      {signal}
     </span>
   );
 }
@@ -2681,20 +2682,33 @@ function App() {
           white-space: nowrap;
         }
 
+        .signal-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+
         .signal-Critico {
           background: rgba(216,91,91,.12);
           color: #b53636;
         }
+
+        .signal-Critico .signal-dot { background: #d85b5b; }
 
         .signal-Atencao {
           background: rgba(215,166,51,.12);
           color: #8e6200;
         }
 
+        .signal-Atencao .signal-dot { background: #d7a633; }
+
         .signal-Monitoramento {
           background: rgba(141,154,173,.12);
           color: #536174;
         }
+
+        .signal-Monitoramento .signal-dot { background: #8d9aad; }
 
         .user-card-signal {
           margin: 6px 0 12px;
