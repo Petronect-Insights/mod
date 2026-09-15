@@ -10,6 +10,9 @@ const baseUsers = [
     name: "Metalúrgica Nordeste Ltda",
     type: "Fornecedor",
     lastAccess: "Hoje, 10:15",
+    edital: "nº 4600123456",
+    prazo: "18/09 — faltam 3 dias",
+    prazoUrgente: true,
     events: [
       { time: "10:02", type: "Login", detail: "Acesso ao Portal Petronect", phase: "before" },
       { time: "10:05", type: "Busca", detail: "Consultou editais de licitação abertos", phase: "before" },
@@ -56,6 +59,9 @@ const baseUsers = [
     name: "Tech Suprimentos Bahia",
     type: "Fornecedor",
     lastAccess: "Hoje, 09:35",
+    edital: "nº 4600201345",
+    prazo: "22/09 — faltam 7 dias",
+    prazoUrgente: false,
     events: [
       { time: "08:30", type: "Login", detail: "Acesso ao Portal Petronect", phase: "before" },
       { time: "08:35", type: "Busca", detail: "Consultou editais da categoria Tecnologia", phase: "before" },
@@ -296,6 +302,30 @@ function applyReengagementEngine(user) {
     execution = "Olá! Notamos que você iniciou uma proposta no Portal mas não concluiu. Nossa equipe pode ajudar — retome de onde parou.";
   }
 
+  const abandonEvent = user.events.find((e) => e.type === "Abandono");
+  const abandonedAt = abandonEvent
+    ? abandonEvent.detail.replace(/^Abandonou /, "").split(" — ")[0]
+    : null;
+
+  let channel, channelLevel;
+  if (user.score >= 85 || user.prazoUrgente) {
+    channel = "Ligação direta — gestor comercial";
+    channelLevel = "Urgente";
+  } else if (user.score >= 70) {
+    channel = "WhatsApp Business + link de retomada";
+    channelLevel = "Alta";
+  } else {
+    channel = "E-mail personalizado";
+    channelLevel = "Média";
+  }
+
+  const steps = [
+    { delay: "T+0h",  label: "Notificação no portal Petronect",    done: true },
+    { delay: "T+4h",  label: "E-mail com link direto de retomada", done: true },
+    { delay: "T+24h", label: user.score >= 70 ? "WhatsApp Business com urgência" : "Segundo e-mail de acompanhamento", done: user.score >= 70 },
+    { delay: "T+48h", label: "Ligação — gestor comercial Petronect", done: !!(user.score >= 85 || user.prazoUrgente) },
+  ];
+
   return {
     ...user,
     automation: {
@@ -307,6 +337,10 @@ function applyReengagementEngine(user) {
       returned,
       continued,
       completed,
+      channel,
+      channelLevel,
+      abandonedAt,
+      steps,
     },
   };
 }
@@ -1496,17 +1530,32 @@ function AutomationPage({
           <div className="automation-details">
             <div>
               <span>Gatilho detectado</span>
-              <strong>
-                {automation.trigger}
-              </strong>
+              <strong>{automation.trigger}</strong>
             </div>
 
+            {automation.abandonedAt && (
+              <div>
+                <span>Etapa de abandono</span>
+                <strong>{automation.abandonedAt}</strong>
+              </div>
+            )}
+
             <div>
-              <span>Ação gerada</span>
-              <strong>
-                {automation.action}
-              </strong>
+              <span>Canal recomendado</span>
+              <strong>{automation.channel}</strong>
+              <span className={`channel-level channel-level-${automation.channelLevel}`}>
+                {automation.channelLevel}
+              </span>
             </div>
+
+            {user.edital && (
+              <div>
+                <span>Prazo do edital {user.edital}</span>
+                <strong className={user.prazoUrgente ? "prazo-urgente" : ""}>
+                  {user.prazo}
+                </strong>
+              </div>
+            )}
 
             <div style={{ gridColumn: "1 / -1" }}>
               <span>Mensagem enviada (simulada)</span>
@@ -1514,6 +1563,20 @@ function AutomationPage({
                 "{automation.execution}"
               </strong>
             </div>
+          </div>
+
+          <div className="automation-divider" />
+
+          <span className="eyebrow">PLANO DE CONTATO</span>
+          <div className="contact-plan">
+            {automation.steps.map((step, i) => (
+              <div key={i} className={`contact-step${step.done ? " contact-step-done" : " contact-step-pending"}`}>
+                <span className="contact-step-delay">{step.delay}</span>
+                <div className="contact-step-dot" />
+                <span className="contact-step-label">{step.label}</span>
+                <span className="contact-step-status">{step.done ? "Enviado" : "Pendente"}</span>
+              </div>
+            ))}
           </div>
 
           <div className="automation-divider" />
@@ -4054,6 +4117,104 @@ function App() {
 
         .automation-details > div:last-child {
           grid-column: 1 / -1;
+        }
+
+        .channel-level {
+          display: inline-flex;
+          margin-top: 6px;
+          padding: 3px 9px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 800;
+        }
+
+        .channel-level-Urgente {
+          background: #ffeaea;
+          color: #b53636;
+        }
+
+        .channel-level-Alta {
+          background: rgba(41,72,143,.12);
+          color: var(--blue);
+        }
+
+        .channel-level-Média {
+          background: #fff1bf;
+          color: #8e6200;
+        }
+
+        .prazo-urgente {
+          color: #b53636 !important;
+        }
+
+        .contact-plan {
+          margin-top: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+
+        .contact-step {
+          display: grid;
+          grid-template-columns: 52px 20px 1fr auto;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 0;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .contact-step:last-child {
+          border-bottom: 0;
+        }
+
+        .contact-step-delay {
+          color: var(--muted);
+          font-size: 11px;
+          font-weight: 700;
+          text-align: right;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .contact-step-dot {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          margin: 0 auto;
+          flex-shrink: 0;
+        }
+
+        .contact-step-done .contact-step-dot {
+          background: var(--green);
+          box-shadow: 0 0 0 3px rgba(113,191,68,.22);
+        }
+
+        .contact-step-pending .contact-step-dot {
+          background: var(--border);
+        }
+
+        .contact-step-label {
+          font-size: 13px;
+          font-weight: 550;
+          color: var(--text-secondary);
+        }
+
+        .contact-step-done .contact-step-label {
+          color: var(--text);
+          font-weight: 650;
+        }
+
+        .contact-step-status {
+          font-size: 11px;
+          font-weight: 750;
+          white-space: nowrap;
+        }
+
+        .contact-step-done .contact-step-status {
+          color: var(--green-dark);
+        }
+
+        .contact-step-pending .contact-step-status {
+          color: var(--muted);
         }
 
         .search-wrap {
