@@ -511,9 +511,10 @@ function DonutChart({ segments }) {
   const arcs = segments.map((seg) => {
     const frac = seg.value / total;
     const dash = frac * circ;
-    const dashOffset = circ * (1 - cumulative);
+    const gap = circ - dash;
+    const dashOffset = circ - cumulative * circ;
     cumulative += frac;
-    return { ...seg, dash, dashOffset };
+    return { ...seg, dash, gap, dashOffset };
   });
 
   return (
@@ -529,9 +530,9 @@ function DonutChart({ segments }) {
             fill="none"
             stroke={arc.color}
             strokeWidth="18"
-            strokeDasharray={`${arc.dash} ${circ}`}
+            strokeDasharray={`${arc.dash} ${arc.gap}`}
             strokeDashoffset={arc.dashOffset}
-            style={{ transform: "rotate(-90deg)", transformOrigin: `${cx}px ${cy}px` }}
+            transform={`rotate(-90, ${cx}, ${cy})`}
           />
         ))}
         <text x={cx} y={cy - 7} textAnchor="middle"
@@ -548,7 +549,10 @@ function DonutChart({ segments }) {
           <div key={seg.label} style={{ display: "flex", alignItems: "center", gap: 9 }}>
             <div style={{ width: 10, height: 10, borderRadius: "50%", background: seg.color, flexShrink: 0 }} />
             <span style={{ fontSize: 13, color: "var(--text-secondary)", fontWeight: 550 }}>{seg.label}</span>
-            <strong style={{ fontSize: 15, marginLeft: "auto" }}>{seg.value}</strong>
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "baseline", gap: 5 }}>
+              <strong style={{ fontSize: 15 }}>{seg.value}</strong>
+              <span style={{ fontSize: 11, color: "var(--muted)" }}>{Math.round(seg.value / total * 100)}%</span>
+            </div>
           </div>
         ))}
       </div>
