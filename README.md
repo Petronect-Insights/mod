@@ -27,14 +27,15 @@ O **Petronect Insights** captura eventos de comportamento de navegação, classi
 
 O abandono quase sempre ocorre na etapa **Proposta**. O Insights detecta isso em tempo real e aciona o canal mais adequado.
 
-### Perfis de classificação
+### Sistema de sinais
 
-| Perfil | Sinal |
-|--------|-------|
-| **Alta interação + abandono** | Demonstrou interesse, iniciou proposta, saiu antes da conclusão |
-| **Alta frequência sem conclusão** | Navega com frequência, nunca submete proposta |
-| **Jornada concluída** | Proposta submetida com sucesso |
-| **Baixa interação** | Poucos acessos, sem engajamento com oportunidades |
+| Sinal | Condição |
+|-------|----------|
+| **Crítico** | Prazo urgente com abandono, ou score ≥ 85 |
+| **Atenção** | Abandono detectado, ou score ≥ 50 |
+| **Monitoramento** | Baixo engajamento, sem abandono recente |
+
+O sinal substitui o ranking numérico de score — o foco é urgência, não hierarquia de importância entre fornecedores.
 
 ### Motor de reengajamento — plano de contato
 
@@ -52,13 +53,36 @@ O canal do T+16h é adaptativo: quando o abandono for causado por erro de preenc
 
 ## Funcionalidades (MVP)
 
-- **Dashboard** — métricas de comportamento, distribuição de prioridade e funil (Retornaram ao Portal / Retomaram a oportunidade / Proposta submetida / Taxa de reengajamento)
-- **Fornecedores do Portal** — lista com busca, filtro por prioridade, score comportamental e barra visual de progresso
-- **Análise individual** — stepper de jornada (Necessidade → Análise → Proposta → Desfecho), linha do tempo com módulos do portal, motivo da classificação e motor de reengajamento
-- **Central de automações** — acompanhamento de reengajamentos ativos organizados por oportunidade, canal e urgência
-- **Plano de contato multi-toque** — 5 etapas com canal, urgência e status por fornecedor
-- **Simulação de eventos** — demonstração do ciclo completo (abandono → reengajamento → retomada → conclusão)
-- **Modo escuro** — alternância entre tema claro e escuro
+### Dashboard
+- **ROI strip** — faixa com métricas em destaque: propostas em risco, valor monitorado estimado, reengajamentos ativos e custo de infraestrutura (R$ 0)
+- **Métricas com CountUp** — todos os números animam de 0 ao valor real ao carregar
+- **Eventos em tempo real** — feed ao vivo com eventos do portal aparecendo a cada 3 segundos (logins, buscas, abandonos detectados pelo motor)
+- **Distribuição de prioridade** — gráfico de rosca ou barras horizontais, alternável
+- **Funil de resultado** — Acionados → Retornaram → Retomaram → Concluíram
+- **Lista de prioridades** — os 5 fornecedores que merecem atenção imediata
+
+### Usuários do Portal
+- Lista completa com busca e filtro por prioridade (Alta, Média, Baixa)
+- Cards com sinal (Crítico, Atenção, Monitoramento), comportamento e status de automação
+
+### Análise individual
+- **Stepper de jornada** — Necessidade → Análise → Proposta → Desfecho, com indicador de travamento
+- **Linha do tempo de eventos** — módulos do portal, horários e marcação do ponto de abandono
+- **Score comportamental** — anel visual com pontuação interna (base dos gatilhos do motor)
+- **Motivo da classificação** — comportamento detectado e contexto do edital
+- **Exportar ficha** — download de `.txt` com todos os dados e histórico de eventos do fornecedor
+
+### Automações
+- **Motor de reengajamento ativo** — lista de fornecedores com automações em andamento, filtro por status (Aguardando, Em andamento, Concluído)
+- **Simulação de eventos** — demonstração do ciclo completo: abandono → notificação → retomada → conclusão
+- **Plano de contato detalhado** — 5 etapas com canal, urgência, mensagem enviada e status por fornecedor
+- **Toasts de feedback** — notificação visual ao acionar simulações
+
+### Configuração
+- **Fluxo de integração** — diagrama Portal Petronect → Motor Insights → Canais de contato
+- **Módulos monitorados** — quais eventos são capturados por módulo (Oportunidades, Propostas, Sala de Colaboração, Login)
+- **Cadência de reengajamento** — visão completa do plano multi-toque com delay, canal e condição de ativação
+- **Fatores do score** — explicação de como o motor comportamental pontua cada tipo de evento
 
 ---
 
@@ -93,7 +117,7 @@ Acesse `http://localhost:5173`
 
 ## Contexto
 
-Desenvolvido para o **Hackathon Petronect** como protótipo funcional de solução de analytics comportamental para o Portal Petronect. Os dados são simulados — em produção, os eventos seriam capturados diretamente do portal via instrumentação de eventos no frontend e integrados à rastreabilidade nativa do portal (histórico de ações e participações).
+Desenvolvido para o **Hackathon Petronect** como protótipo funcional de solução de analytics comportamental para o Portal Petronect. Os dados são simulados — em produção, os eventos seriam capturados diretamente do portal via instrumentação de eventos no frontend e integrados à rastreabilidade nativa do portal (histórico de ações e participações em editais).
 
 ---
 
