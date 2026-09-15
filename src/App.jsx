@@ -566,6 +566,8 @@ function Dashboard({
   onSelectUser,
   openAutomations,
 }) {
+  const [chartView, setChartView] = useState("donut");
+
   const priorityUsers = users.filter(
     (user) =>
       user.priority === "Alta" ||
@@ -688,16 +690,37 @@ function Dashboard({
               <span className="eyebrow">COMPORTAMENTO</span>
               <h2>Distribuição por prioridade</h2>
             </div>
+
+            <div className="chart-toggle">
+              <button
+                className={chartView === "donut" ? "chart-toggle-active" : ""}
+                onClick={() => setChartView("donut")}
+                title="Gráfico de rosca"
+              >◎</button>
+              <button
+                className={chartView === "bars" ? "chart-toggle-active" : ""}
+                onClick={() => setChartView("bars")}
+                title="Barras horizontais"
+              >≡</button>
+            </div>
           </div>
 
           <div style={{ marginTop: 24 }}>
-            <DonutChart
-              segments={[
-                { label: "Alta prioridade", value: priorityCounts.Alta, color: "#d85b5b" },
-                { label: "Média prioridade", value: priorityCounts.Média, color: "#d7a633" },
-                { label: "Baixa prioridade", value: priorityCounts.Baixa, color: "#8d9aad" },
-              ]}
-            />
+            {chartView === "donut" ? (
+              <DonutChart
+                segments={[
+                  { label: "Alta prioridade", value: priorityCounts.Alta, color: "#d85b5b" },
+                  { label: "Média prioridade", value: priorityCounts.Média, color: "#d7a633" },
+                  { label: "Baixa prioridade", value: priorityCounts.Baixa, color: "#8d9aad" },
+                ]}
+              />
+            ) : (
+              <div className="bars-list">
+                <MiniBar label="Alta" value={priorityCounts.Alta} max={maxPriority} tone="red" />
+                <MiniBar label="Média" value={priorityCounts.Média} max={maxPriority} tone="yellow" />
+                <MiniBar label="Baixa" value={priorityCounts.Baixa} max={maxPriority} tone="gray" />
+              </div>
+            )}
           </div>
         </article>
 
@@ -1035,19 +1058,10 @@ function AutomationsPage({
         ← Voltar
       </button>
 
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">
-            CENTRAL DE AUTOMAÇÕES
-          </span>
-
-          <h1>Reengajamentos</h1>
-
-          <p>
-            Acompanhe os usuários acionados automaticamente
-            pelo Petronect Insights.
-          </p>
-        </div>
+      <div className="page-hero">
+        <span className="eyebrow">CENTRAL DE AUTOMAÇÕES</span>
+        <h1>Reengajamentos</h1>
+        <p>Acompanhe os usuários acionados automaticamente pelo Petronect Insights.</p>
       </div>
 
       <section className="automation-summary-grid">
@@ -3976,6 +3990,55 @@ function App() {
 
         .automation-details > div:last-child {
           grid-column: 1 / -1;
+        }
+
+        .chart-toggle {
+          display: flex;
+          gap: 3px;
+          padding: 4px;
+          border-radius: 12px;
+          background: var(--surface-soft);
+          border: 1px solid var(--border);
+          flex-shrink: 0;
+        }
+
+        .chart-toggle button {
+          width: 34px;
+          height: 34px;
+          border: 0;
+          border-radius: 9px;
+          background: transparent;
+          color: var(--muted);
+          font-size: 17px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background .15s, color .15s;
+        }
+
+        .chart-toggle-active {
+          background: var(--surface) !important;
+          color: var(--blue) !important;
+          box-shadow: 0 1px 4px rgba(0,0,0,.10);
+        }
+
+        .page-hero {
+          max-width: 680px;
+          margin: 0 auto 40px;
+          text-align: center;
+        }
+
+        .page-hero h1 {
+          margin: 8px 0 0;
+          font-size: clamp(36px, 5vw, 56px);
+          letter-spacing: -.05em;
+        }
+
+        .page-hero p {
+          margin: 14px 0 0;
+          color: var(--text-secondary);
+          font-size: 16px;
+          line-height: 1.6;
         }
       `}</style>
 
