@@ -2885,6 +2885,7 @@ function App() {
           text-align: center;
         }
 
+        .user-row > div:nth-child(3),
         .user-row > div:nth-child(4),
         .user-row > div:nth-child(5) {
           display: flex;
