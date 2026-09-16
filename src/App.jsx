@@ -130,6 +130,52 @@ const baseUsers = [
    MOTOR DE ANÁLISE
 ========================================================= */
 
+// Helper para enviar eventos do frontend para o BigQuery/Cloud Logging via API
+async function registrarAcessoGCP(userId, acao, detalhe) {
+  try {
+    await fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, acao, detalhe }),
+    });
+  } catch (err) {
+    console.error('Erro ao conectar com API de logs:', err);
+  }
+}
+
+function simulateFollowUp(user) {
+    setSimulatedEvents((current) => ({
+      ...current,
+      [user.id]: user.followUpTemplate,
+    }));
+    addToast("Automação ativada", user.name, "success");
+
+    // REGISTRO NO GOOGLE CLOUD:
+    registrarAcessoGCP(user.id, "Simulacao_Reengajamento", `Simulados novos eventos para ${user.name}`);
+  }
+
+function openUser(user) {
+    window.location.hash =
+      `#/user/${encodeURIComponent(user.id)}`;
+
+    // REGISTRO NO GOOGLE CLOUD:
+    registrarAcessoGCP(user.id, "Visualizacao_Usuario", `Consultou perfil de ${user.name}`);
+  }
+
+function fireAction(userId, acao) {
+    const key = userId + acao;
+    if (fired[key]) return;
+    setFired((prev) => ({ ...prev, [key]: true }));
+    const cfg = ACOES_CONFIG[acao];
+    const user = users.find((u) => u.id === userId);
+    addToast(cfg.done, user?.name || "", cfg.type);
+
+    // REGISTRO NO GOOGLE CLOUD:
+    registrarAcessoGCP(userId, "Acao_Manual_Disparada", `Ação: ${acao} para ${user?.name}`);
+
+    setTimeout(() => setFired((prev) => { const c = { ...prev }; delete c[key]; return c; }), 3000);
+  }
+
 function analyzeUser(user) {
   const originalEvents = user.events.filter(
     (event) => event.phase !== "after"
