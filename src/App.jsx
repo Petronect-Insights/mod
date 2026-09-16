@@ -1,5 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 
+// Helper para enviar eventos do frontend para o BigQuery/Cloud Logging via API
+async function registrarAcessoGCP(userId, acao, detalhe) {
+  try {
+    await fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, acao, detalhe }),
+    });
+  } catch (err) {
+    console.error('Erro ao conectar com API de logs:', err);
+  }
+}
+
 /* =========================================================
    DADOS SIMULADOS
 ========================================================= */
