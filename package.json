@@ -12,6 +12,7 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "@google-cloud/logging": "^11.2.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
